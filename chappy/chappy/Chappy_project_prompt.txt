@@ -1,0 +1,99 @@
+Du är en agent som ska utveckla en komplett chattapplikation, Chappy, baserat på MERN-stacken (MongoDB, Express, React, Node.js). Ditt mål är att självständigt bygga backend- och frontend-API:er samt hela applikationens funktionalitet enligt specifikationerna i detta projekt. Jag förväntar mig att du tar fullt ansvar för utvecklingen och bara kontaktar mig vid externa hinder eller frågor som kräver min insats.
+
+	Uppdrag:
+
+	1.	Backend:
+
+	•	Skapa ett RESTful API med Express och MongoDB.
+	•	Implementera JWT-autentisering och datavalidering med Joi.
+	•	Dokumentera alla endpoints i README.md enligt angivet tabellformat.
+
+	2.	Frontend:
+
+	•	Utveckla en responsiv och användarvänlig UI med React.
+	•	Använd de angivna UI-komponenterna (Button, Card, Input, ScrollArea, Separator m.fl.).
+	•	Säkerställ att alla nödvändiga npm-paket installeras och används korrekt.
+
+	3.	Specifikationer:
+
+	•	Implementera funktioner för öppna och låsta kanaler samt direkta meddelanden (DM).
+	•	Bygg funktionalitet för både gästanvändare och inloggade användare med rättighetshantering.
+
+	4.	Projektfaser:
+
+	•	Fas 1: Grundläggande funktionalitet (autentisering, användarhantering, öppna kanaler).
+	•	Fas 2: Avancerade funktioner (låsta kanaler, direkta meddelanden).
+	•	Fas 3: Extra funktioner (emojis, bildstöd, syntax-highlighting).
+
+	5.	Arbetsprocess:
+
+   •	Arbeta agilt och gör commits vid varje större del av projektet.
+	•	Dokumentera alla steg och detaljer i README.md.
+
+	Viktiga förväntningar:
+
+	•	Du arbetar självständigt och löser problem utan att behöva min input i onödan.
+	•	Kontakta mig endast om något kräver min direkta insats, exempelvis att skapa tredjepartskonton, få åtkomst till externa databastjänster, eller liknande.
+	•	Ge mig regelbundna uppdateringar vid större milstolpar så jag kan följa projektets framsteg.
+
+	Ditt uppdrag är att leverera en komplett och fungerande applikation som uppfyller alla krav enligt specifikationen. Jag finns här som stöd om du stöter på externa hinder. Starta nu och meddela mig när det finns något som kräver min hjälp.
+
+### Frontend-design och UI-komponenter
+
+Använd den specificerade koden för frontend-gränssnittet, som innehåller en fullständig layout för sidomenyer, kanaler och meddelandevy. Se till att alla nödvändiga paket installeras och importeras korrekt:
+
+```javascript
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
+import { Hash, Lock, MessageSquare, Send, Users } from "lucide-react"
+
+// ... Rest of the Component code provided in the original message
+```
+
+### Specifikationer och arbetsflöde
+
+1. **Användare och rättighetshantering:**
+   - **Gäster**: Ska kunna se listor över användare och kanaler samt delta i öppna kanaler.
+   - **Inloggade användare**: Ska kunna skicka meddelanden i låsta kanaler och direkta meddelanden till specifika användare.
+
+2. **Backend och API-struktur:**
+   - Utveckla ett RESTful API med Express och MongoDB.
+   - Använd JWT för säker inloggning och implementera datavalidering med Joi.
+   - Dokumentera API-endpoints i README.md med ett tydligt tabellformat (se exempel nedan).
+
+3. **Frontend-funktionalitet:**
+   - Implementera UI-designen exakt som specificerat i koden ovan.
+   - Använd React och React Router för sidhantering, och överväg Zustand eller Redux för state management.
+   - Se till att ladda alla nödvändiga npm-paket för att stödja de importerade komponenterna (Button, Card, Input etc.).
+
+4. **Datamodellering och API-endpoints:**
+   - Definiera objektmodeller för användare, kanaler, och meddelanden, samt tillhörande endpoints.
+   - Exempel på endpoint-tabell för README.md:
+
+     | Metod  | URL                        | Body                     | Response                          |
+     |--------|----------------------------|--------------------------|-----------------------------------|
+     | GET    | `/api/users`               | -                        | Lista med användare               |
+     | POST   | `/api/login`               | `{username, password}`   | JWT-token vid lyckad inloggning   |
+     | POST   | `/api/messages`            | `{message, channelID}`   | Bekräftelse för nytt meddelande   |
+     | DELETE | `/api/users/:id`           | -                        | Bekräftelse vid borttagning       |
+
+5. **Projektets utvecklingsfaser:**
+   - **Fas 1 (Grundläggande funktionalitet)**: Implementera användarhantering, meddelanden och autentisering.
+   - **Fas 2 (Avancerad funktionalitet)**: Lägg till registrering, kanalhantering och kontohantering.
+   - **Fas 3 (Extra funktioner)**: Implementera användarskapade kanaler, emojis, bildstöd, samt syntax-highlighting för kod.
+
+6. **Automatiska åtgärder och problemlösning:**
+   - Installera alla nödvändiga npm-paket och säkerställ att applikationen fungerar som förväntat.
+   - Endast kontakta mig om specifika hinder uppstår som kräver extern input, som skapande av konton eller åtkomst till externa databastjänster.
+
+7. **Arbetsprocess och dokumentation:**
+   - Arbeta agilt med commit varje gång en ny funktion är färdig.
+   - Dokumentera alla endpoints och viktiga detaljer om projektets uppbyggnad i README.md.
+
+Projektet förväntas vara självdrivande och ska endast använda mig som bollplank för specifika frågor eller problem.
+
+
+
