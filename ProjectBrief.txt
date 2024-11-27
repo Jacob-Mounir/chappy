@@ -1,0 +1,86 @@
+Chappy - Chattapplikation
+
+Chappy är en chattapplikation där användare kan kommunicera via öppna och låsta kanaler samt skicka direkta meddelanden (DM). Applikationen byggs med MERN-stacken (MongoDB, Express, React, Node.js) och inkluderar modern autentisering och validering för säkerhet och användarvänlighet.
+
+
+Funktioner
+
+Användarroller och rättigheter
+
+	•	Gäster:
+	•	Kan se användarlistor och öppna kanaler.
+	•	Kan delta i öppna kanaler.
+	•	Inloggade användare:
+	•	Kan skicka meddelanden i låsta kanaler.
+	•	Kan skicka direkta meddelanden (DM) till specifika användare.
+
+Huvudfunktionalitet
+
+	1.	Autentisering och säkerhet:
+	•	JWT-baserad inloggning och registrering.
+	•	Validering med Joi.
+	2.	Chattfunktionalitet:
+	•	Skicka och ta emot meddelanden i realtid.
+	•	Hantera låsta och öppna kanaler.
+	3.	Frontend-design:
+	•	En användarvänlig UI med React.
+	•	Responsiv design för mobiler och datorer.
+
+
+
+   Teknisk översikt
+
+Backend
+
+	•	RESTful API med Express.
+	•	Databas: MongoDB.
+	•	Säkerhet: JWT för autentisering och Joi för datavalidering.
+	•	Dokumentation av API-endpoints i tabellformat.
+
+Frontend
+
+	•	UI-komponenter byggda med React.
+	•	State management: Zustand eller Redux.
+	•	Paket som används:
+	•	Button, Card, Input, ScrollArea, Separator m.fl.
+	•	Ikoner: Lucide-react (Hash, Lock, MessageSquare, Send, Users).
+
+
+
+Specifikationer 
+
+API-Endpoints
+
+Metod	URL	Body	Response
+GET	/api/users	-	Lista med användare
+POST	/api/login	{username, password}	JWT-token vid lyckad inloggning
+POST	/api/messages	{message, channelID}	Bekräftelse för nytt meddelande
+DELETE	/api/users/:id	-	Bekräftelse vid borttagning
+
+
+
+Projektets utvecklingsfaser
+
+	1.	Fas 1: Grundläggande funktionalitet
+	•	Autentisering (registrering och inloggning).
+	•	Användarhantering (skapa, läsa, uppdatera, ta bort).
+	•	Grundläggande kanalhantering (öppna/låsta kanaler).
+
+
+	2.	Fas 2: Avancerad funktionalitet
+	•	Direktmeddelanden (DM).
+	•	Detaljerad hantering av användarrättigheter.
+	•	Förbättrad UI med realtidsuppdateringar.
+
+
+   3.	Fas 3: Extra funktioner
+	•	Användarskapade kanaler.
+	•	Emojistöd och bilddelning.
+	•	Syntax-highlighting för kodblock.
+
+
+
+   Automatiska åtgärder och problemlösning
+
+	•	Alla nödvändiga npm-paket ska installeras automatiskt vid projektstart.
+	•	Kontakta projektägaren om hinder uppstår, såsom externa databastjänster eller tredjepartsintegrationer.
