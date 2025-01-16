@@ -7,11 +7,12 @@ export function DirectMessageList() {
   const { directMessages, currentConversation, userState } = useStore();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Filtrera meddelanden för aktuell konversation
-  const conversationMessages = directMessages.filter(
-    msg =>
+  // Filtrera och sortera meddelanden för aktuell konversation
+  const conversationMessages = directMessages
+    .filter(msg =>
       (msg.sender._id === currentConversation?._id || msg.recipient._id === currentConversation?._id)
-  );
+    )
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()); // Sortera äldst till nyast
 
   // Auto-scroll till botten när nya meddelanden kommer
   useEffect(() => {
@@ -21,7 +22,7 @@ export function DirectMessageList() {
   }, [conversationMessages]);
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto">
+    <div ref={scrollRef} className="flex-1 overflow-y-auto flex flex-col-reverse">
       <div className="flex flex-col p-4 gap-4">
         {conversationMessages.map((message) => {
           const isOwnMessage = userState?.type === 'authenticated' &&
