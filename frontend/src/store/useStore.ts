@@ -137,53 +137,42 @@ export const useStore = create<StoreState>()(
             return false;
           }
 
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           const { data } = await api.get('/auth/me');
 
-          if (!data || !data.user) {
-            throw new Error('Invalid response from server');
+          if (!data || !data._id) {
+            // Rensa token om den är ogiltig
+            localStorage.removeItem('token');
+            set({
+              userState: null,
+              token: null,
+              isInitialized: true
+            });
+            return false;
           }
 
           const authenticatedUser: AuthenticatedUser = {
-            _id: data.user._id,
-            username: data.user.username,
-            email: data.user.email,
+            _id: data._id,
+            username: data.username,
+            email: data.email,
             type: 'authenticated'
           };
 
           set({
             userState: authenticatedUser,
             token,
-            isLoading: false,
-            error: null,
             isInitialized: true
           });
-
-          // Fetch initial data
-          await get().fetchChannels();
-          await get().fetchConversations();
-
           return true;
         } catch (error) {
           console.error('Auth check error:', error);
-          // Clear any invalid auth state
+          // Rensa token vid fel
           localStorage.removeItem('token');
-          delete api.defaults.headers.common['Authorization'];
-
           set({
             userState: null,
             token: null,
-            error: null,
-            isLoading: false,
             isInitialized: true,
-            channels: [],
-            messages: [],
-            conversations: [],
-            currentChannel: null,
-            currentConversation: null,
-            directMessages: []
+            error: 'Authentication failed. Please log in again.'
           });
-
           return false;
         }
       },

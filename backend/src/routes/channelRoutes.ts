@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth, attachUserState, AuthRequest, isAuthenticated } from '../middleware/auth';
+import { requireAuth, AuthRequest, isAuthenticated, getAuthenticatedUserId } from '../middleware/auth';
 import { Channel } from '../models/Channel';
 import { validate } from '../middleware/validate';
 import { schemas } from '../validation/schemas';
@@ -9,50 +9,47 @@ import { UserDocument } from '../models/User';
 
 const router = Router();
 
-// Get all channels (public and private if authenticated)
-router.get('/', attachUserState, async (req: AuthRequest, res) => {
+// Get all channels
+router.get('/', requireAuth, async (req: AuthRequest, res) => {
   try {
-    // If user is authenticated, include private channels they're a member of
-    const channels = await Channel.find(
-      req.userState && isAuthenticated(req.userState)
-        ? {
-            $or: [
-              { isPrivate: false },
-              { isPrivate: true, members: new mongoose.Types.ObjectId(req.userState._id) }
-            ]
-          }
-        : { isPrivate: false }
-    ).select('name description isPrivate');
+    if (!isAuthenticated(req.userState)) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const userId = getAuthenticatedUserId(req.userState);
+    const channels = await Channel.find({
+      $or: [
+        { isPrivate: false },
+        { members: new mongoose.Types.ObjectId(userId) }
+      ]
+    });
 
     res.json(channels);
   } catch (error) {
-    console.error('Error fetching channels:', error);
-    res.status(500).json({ message: 'Error fetching channels' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Get channel by ID (public for open channels, auth for private)
-router.get('/:id', attachUserState, async (req: AuthRequest, res) => {
+// Get channel by ID
+router.get('/:id', requireAuth, async (req: AuthRequest, res) => {
   try {
+    if (!isAuthenticated(req.userState)) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
     const channel = await Channel.findById(req.params.id);
     if (!channel) {
       return res.status(404).json({ message: 'Channel not found' });
     }
 
-    if (channel.isPrivate) {
-      if (!req.userState || !isAuthenticated(req.userState)) {
-        return res.status(401).json({ message: 'Authentication required' });
-      }
-      const userId = new mongoose.Types.ObjectId(req.userState._id);
-      if (!channel.members.some(id => id.equals(userId))) {
-        return res.status(403).json({ message: 'Access denied' });
-      }
+    const userId = getAuthenticatedUserId(req.userState);
+    if (channel.isPrivate && !channel.members.some(id => id.equals(userId))) {
+      return res.status(403).json({ message: 'Access denied' });
     }
 
     res.json(channel);
   } catch (error) {
-    console.error('Error fetching channel:', error);
-    res.status(500).json({ message: 'Error fetching channel' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -83,33 +80,31 @@ router.post('/', requireAuth, validate(schemas.channel.create), async (req: Auth
   }
 });
 
-// Join channel (auth required for private channels)
-router.post('/:id/join', attachUserState, async (req: AuthRequest, res) => {
+// Join channel
+router.post('/:id/join', requireAuth, async (req: AuthRequest, res) => {
   try {
+    if (!isAuthenticated(req.userState)) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
     const channel = await Channel.findById(req.params.id);
     if (!channel) {
       return res.status(404).json({ message: 'Channel not found' });
     }
 
-    // For private channels, require authentication
-    if (channel.isPrivate) {
-      if (!req.userState || !isAuthenticated(req.userState)) {
-        return res.status(401).json({ message: 'Authentication required for private channels' });
-      }
+    const userId = getAuthenticatedUserId(req.userState);
 
-      const userId = new mongoose.Types.ObjectId(req.userState._id);
-      if (channel.members.some(id => id.equals(userId))) {
-        return res.status(400).json({ message: 'Already a member' });
-      }
-
-      channel.members.push(userId);
-      await channel.save();
+    // Check if already a member
+    if (channel.members.some(id => id.equals(userId))) {
+      return res.status(400).json({ message: 'Already a member' });
     }
+
+    channel.members.push(new mongoose.Types.ObjectId(userId));
+    await channel.save();
 
     res.json(channel);
   } catch (error) {
-    console.error('Error joining channel:', error);
-    res.status(500).json({ message: 'Error joining channel' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -141,28 +136,27 @@ router.post('/:id/leave', requireAuth, async (req: AuthRequest, res) => {
 });
 
 // Get channel users
-router.get('/:channelId/users', attachUserState, async (req: AuthRequest, res) => {
+router.get('/:channelId/users', requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { channelId } = req.params;
+    if (!isAuthenticated(req.userState)) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
-    const channel = await Channel.findById(channelId)
-      .populate<{ members: UserDocument[] }>('members', 'username isOnline')
-      .exec();
+    const channel = await Channel.findById(req.params.channelId)
+      .populate('members', 'username email');
 
     if (!channel) {
       return res.status(404).json({ message: 'Channel not found' });
     }
 
-    const users = channel.members.map(member => ({
-      _id: member._id,
-      username: member.username,
-      isOnline: member.isOnline || false
-    }));
+    const userId = getAuthenticatedUserId(req.userState);
+    if (channel.isPrivate && !channel.members.some(id => id.equals(userId))) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
 
-    res.json(users);
+    res.json(channel.members);
   } catch (error) {
-    console.error('Error fetching channel users:', error);
-    res.status(500).json({ message: 'Error fetching channel users' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

@@ -1,99 +1,101 @@
 import { Request, Response, NextFunction } from 'express';
+import { AuthRequest } from '../types/express';
+import { User } from '../models/User';
 import jwt from 'jsonwebtoken';
-import { User, UserDocument } from '../models/User';
+import { UserState, AuthenticatedUser } from '../types/common';
 
-// Define specific types for different user states
-type AuthenticatedUser = {
-  _id: string;
-  username: string;
-  email: string;
-  type: 'authenticated';
-};
-
-type GuestUser = {
-  type: 'guest';
-};
-
-type UserState = AuthenticatedUser | GuestUser;
-
-// Extend Request with our specific user type
-export interface AuthRequest extends Request {
-  userState?: UserState;
-  user?: { _id: string };
-}
-
-interface JwtPayload {
-  userId: string;
-}
+// Re-export AuthRequest type
+export type { AuthRequest } from '../types/express';
 
 // Helper function to check if user is authenticated
-export const isAuthenticated = (userState: UserState): userState is AuthenticatedUser => {
-  return userState.type === 'authenticated';
+export const isAuthenticated = (userState: UserState | undefined): userState is AuthenticatedUser => {
+  return Boolean(userState && userState.type === 'authenticated');
 };
 
-// Middleware to attach user state - either authenticated or guest
-export const attachUserState = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-
-    if (!token) {
-      req.userState = { type: 'guest' };
-      return next();
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    const user = await User.findById(decoded.userId).select('_id username email') as UserDocument | null;
-
-    if (!user) {
-      req.userState = { type: 'guest' };
-      return next();
-    }
-
-    const userState: AuthenticatedUser = {
-      _id: user._id.toString(),
-      username: user.username,
-      email: user.email,
-      type: 'authenticated'
-    };
-
-    req.userState = userState;
-    req.user = { _id: userState._id };
-    next();
-  } catch (error) {
-    console.error('Token verification error:', error);
-    req.userState = { type: 'guest' };
-    next();
+// Helper function to ensure user is authenticated and get ID
+export const getAuthenticatedUserId = (userState: UserState | undefined): string => {
+  if (!userState || userState.type !== 'authenticated') {
+    throw new Error('User must be authenticated');
   }
+  return userState._id.toString();
 };
 
-// Middleware to require authentication
-export const requireAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
+// Main auth middleware
+export const auth = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    const token = req.headers.authorization?.replace('Bearer ', '');
 
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    const user = await User.findById(decoded.userId) as UserDocument | null;
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || 'your-secret-key'
+    ) as { userId: string };
 
+    const user = await User.findById(decoded.userId);
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
 
-    const userState: AuthenticatedUser = {
+    req.user = user;
+    req.userState = {
+      type: 'authenticated',
       _id: user._id.toString(),
       username: user.username,
-      email: user.email,
-      type: 'authenticated'
+      email: user.email
     };
 
-    req.userState = userState;
-    req.user = { _id: userState._id };
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
-    return res.status(401).json({ message: 'Invalid token' });
+    res.status(401).json({ message: 'Invalid token' });
+  }
+};
+
+// Alias for auth middleware to maintain backward compatibility
+export const requireAuth = auth;
+
+// Middleware to attach user state - either authenticated or guest
+export const attachUserState = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!token) {
+      req.userState = { type: 'guest', username: 'Guest' };
+      return next();
+    }
+
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || 'your-secret-key'
+    ) as { userId: string };
+
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      req.userState = { type: 'guest', username: 'Guest' };
+      return next();
+    }
+
+    req.user = user;
+    req.userState = {
+      type: 'authenticated',
+      _id: user._id.toString(),
+      username: user.username,
+      email: user.email
+    };
+
+    next();
+  } catch (error) {
+    req.userState = { type: 'guest', username: 'Guest' };
+    next();
   }
 };

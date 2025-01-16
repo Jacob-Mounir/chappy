@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth, AuthRequest, isAuthenticated } from '../middleware/auth';
+import { requireAuth, AuthRequest, isAuthenticated, getAuthenticatedUserId } from '../middleware/auth';
 import { DirectMessage } from '../models/DirectMessage';
 import { User } from '../models/User';
 import { validate } from '../middleware/validate';
@@ -11,11 +11,11 @@ const router = Router();
 // Get all DM conversations for the authenticated user
 router.get('/conversations', requireAuth, async (req: AuthRequest, res) => {
   try {
-    if (!req.userState || !isAuthenticated(req.userState)) {
-      return res.status(401).json({ message: 'Authentication required' });
+    if (!isAuthenticated(req.userState)) {
+      return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const userId = new mongoose.Types.ObjectId(req.userState._id);
+    const userId = getAuthenticatedUserId(req.userState);
 
     // Find all unique conversations
     const conversations = await DirectMessage.aggregate([
@@ -64,8 +64,7 @@ router.get('/conversations', requireAuth, async (req: AuthRequest, res) => {
 
     res.json(conversations);
   } catch (error) {
-    console.error('Error fetching conversations:', error);
-    res.status(500).json({ message: 'Error fetching conversations' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

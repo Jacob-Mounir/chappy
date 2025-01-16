@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth, attachUserState, AuthRequest, isAuthenticated } from '../middleware/auth';
+import { requireAuth, AuthRequest, isAuthenticated, getAuthenticatedUserId } from '../middleware/auth';
 import { Message } from '../models/Message';
 import { Channel } from '../models/Channel';
 import { validate } from '../middleware/validate';
@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 const router = Router();
 
 // Get messages for a channel
-router.get('/channel/:channelId', attachUserState, async (req: AuthRequest, res) => {
+router.get('/channel/:channelId', requireAuth, async (req: AuthRequest, res) => {
   try {
     const channel = await Channel.findById(req.params.channelId);
     if (!channel) {
@@ -49,7 +49,7 @@ router.get('/channel/:channelId', attachUserState, async (req: AuthRequest, res)
 });
 
 // Send a message to a channel
-router.post('/channel/:channelId', attachUserState, async (req: AuthRequest, res) => {
+router.post('/channel/:channelId', requireAuth, async (req: AuthRequest, res) => {
   try {
     const { channelId } = req.params;
     const { content, guestName } = req.body;
@@ -97,6 +97,28 @@ router.post('/channel/:channelId', attachUserState, async (req: AuthRequest, res
   } catch (error) {
     console.error('Error sending message:', error);
     res.status(500).json({ message: 'Error sending message' });
+  }
+});
+
+router.post('/', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (!isAuthenticated(req.userState)) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const userId = getAuthenticatedUserId(req.userState);
+    const { content, channelId } = req.body;
+
+    const newMessage = new Message({
+      content: content.trim(),
+      sender: userId,
+      channel: channelId
+    });
+
+    await newMessage.save();
+    res.json(newMessage);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
