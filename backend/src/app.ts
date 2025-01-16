@@ -20,11 +20,13 @@ app.use(express.json());
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://chappy-frontend.onrender.com'
+    'http://localhost:3000',
+    'https://chappy-frontend.onrender.com',
+    'https://chappyv.onrender.com'
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Request logging middleware (AFTER body parsing)
@@ -82,9 +84,12 @@ const io = new Server(httpServer, {
   cors: {
     origin: [
       'http://localhost:5173',
-      'https://chappy-frontend.onrender.com'
+      'http://localhost:3000',
+      'https://chappy-frontend.onrender.com',
+      'https://chappyv.onrender.com'
     ],
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST']
   }
 });
 

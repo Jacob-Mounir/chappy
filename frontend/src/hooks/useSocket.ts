@@ -2,15 +2,25 @@ import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useStore } from '../store/useStore';
 
-const SOCKET_URL = 'https://chappyv.onrender.com';
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+const SOCKET_URL = isDevelopment
+  ? 'http://localhost:5001'
+  : 'https://chappyv.onrender.com';
 
 export const useSocket = () => {
   const socketRef = useRef<Socket>();
   const { userState, addMessage } = useStore();
 
   useEffect(() => {
-    // Skapa socket anslutning
-    socketRef.current = io(SOCKET_URL);
+    // Skapa socket anslutning med auth token
+    const token = localStorage.getItem('token');
+    socketRef.current = io(SOCKET_URL, {
+      withCredentials: true,
+      auth: {
+        token
+      }
+    });
 
     // Lyssna efter nya meddelanden
     socketRef.current.on('receive_message', (message) => {
