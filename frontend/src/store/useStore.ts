@@ -518,11 +518,43 @@ export const useStore = create<StoreState>()(
           );
 
           if (isDuplicate) {
-            return state; // Returnera oförändrad state om meddelandet redan finns
+            return state;
+          }
+
+          // Uppdatera conversations-listan med det senaste meddelandet
+          const updatedConversations = state.conversations.map(conv => {
+            if (conv._id === message.sender._id || conv._id === message.recipient._id) {
+              return {
+                ...conv,
+                lastMessage: {
+                  content: message.content,
+                  createdAt: message.createdAt
+                }
+              };
+            }
+            return conv;
+          });
+
+          // Om konversationen inte finns, lägg till den
+          const conversationExists = updatedConversations.some(
+            conv => conv._id === message.sender._id || conv._id === message.recipient._id
+          );
+
+          if (!conversationExists) {
+            const newConversation = {
+              _id: message.sender._id === state.userState?._id ? message.recipient._id : message.sender._id,
+              username: message.sender._id === state.userState?._id ? message.recipient.username : message.sender.username,
+              lastMessage: {
+                content: message.content,
+                createdAt: message.createdAt
+              }
+            };
+            updatedConversations.push(newConversation);
           }
 
           return {
-            directMessages: [...state.directMessages, message]
+            directMessages: [...state.directMessages, message],
+            conversations: updatedConversations
           };
         });
       }
@@ -531,8 +563,24 @@ export const useStore = create<StoreState>()(
       name: 'chappy-store',
       partialize: (state) => ({
         userState: state.userState,
-        token: state.token
-      })
+        token: state.token,
+        isInitialized: state.isInitialized,
+        guestName: state.guestName,
+        currentChannel: state.currentChannel,
+        currentConversation: state.currentConversation,
+        channels: state.channels,
+        conversations: state.conversations
+      }),
+      storage: {
+        getItem: (name) => {
+          const str = localStorage.getItem(name);
+          return str ? JSON.parse(str) : null;
+        },
+        setItem: (name, value) => {
+          localStorage.setItem(name, JSON.stringify(value));
+        },
+        removeItem: (name) => localStorage.removeItem(name)
+      }
     }
   )
 );
