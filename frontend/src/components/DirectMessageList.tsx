@@ -1,64 +1,67 @@
 import { useEffect, useRef } from 'react';
 import { useStore } from '../store/useStore';
-import { format } from 'date-fns';
+import { ScrollArea } from './ui/scroll-area';
+import type { AuthenticatedUser } from '../types/store';
 
 export function DirectMessageList() {
-  const { directMessages, userState, isLoading } = useStore();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { directMessages, currentConversation, userState } = useStore();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Filtrera meddelanden för aktuell konversation
+  const conversationMessages = directMessages.filter(
+    msg =>
+      (msg.sender._id === currentConversation?._id || msg.recipient._id === currentConversation?._id)
+  );
+
+  // Auto-scroll till botten när nya meddelanden kommer
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [directMessages]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        Loading messages...
-      </div>
-    );
-  }
-
-  if (!directMessages.length) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        No messages yet. Start a conversation!
-      </div>
-    );
-  }
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [conversationMessages]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {directMessages.map((message) => {
-        const isCurrentUser = userState?.type === 'authenticated' && message.sender._id === userState._id;
+    <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      <div className="flex flex-col p-4 gap-4">
+        {conversationMessages.map((message) => {
+          const isOwnMessage = userState?.type === 'authenticated' &&
+            message.sender._id === (userState as AuthenticatedUser)._id;
 
-        return (
-          <div
-            key={message._id}
-            className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-          >
+          return (
             <div
-              className={`max-w-[70%] rounded-lg p-3 ${
-                isCurrentUser
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted'
-              }`}
+              key={message._id}
+              className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
             >
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-medium text-sm">
-                  {message.sender.username}
-                </span>
-                <span className="text-xs opacity-70">
-                  {format(new Date(message.createdAt), 'HH:mm')}
-                </span>
+              <div
+                className={`
+                  max-w-[70%] rounded-lg p-3
+                  ${isOwnMessage
+                    ? 'bg-primary text-primary-foreground ml-auto'
+                    : 'bg-muted'
+                  }
+                `}
+              >
+                <div className="flex flex-col gap-1">
+                  {!isOwnMessage && (
+                    <span className="text-xs font-medium opacity-70">
+                      {message.sender.username}
+                    </span>
+                  )}
+                  <p className="text-sm whitespace-pre-wrap break-words">
+                    {message.content}
+                  </p>
+                  <span className="text-xs opacity-70 ml-auto">
+                    {new Date(message.createdAt).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </div>
               </div>
-              <p className="text-sm whitespace-pre-wrap break-words">
-                {message.content}
-              </p>
             </div>
-          </div>
-        );
-      })}
-      <div ref={messagesEndRef} />
+          );
+        })}
+      </div>
     </div>
   );
 }
