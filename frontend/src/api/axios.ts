@@ -16,6 +16,9 @@ const api = axios.create({
   timeout: 30000
 });
 
+// Add default headers for all requests
+api.defaults.headers.common['Access-Control-Allow-Origin'] = 'https://chappy-frontend.onrender.com';
+
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
@@ -23,6 +26,8 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Ensure CORS headers are present
+    config.headers['Access-Control-Allow-Credentials'] = 'true';
     return config;
   },
   (error) => {
