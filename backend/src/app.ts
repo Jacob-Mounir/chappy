@@ -97,25 +97,35 @@ const io = new Server(httpServer, {
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  // Lyssna efter när en användare ansluter till ett rum (konversation)
+  // Håll reda på vilka rum socketen är ansluten till
+  const joinedRooms = new Set<string>();
+
   socket.on('join_conversation', (conversationId) => {
-    socket.join(conversationId);
-    console.log(`User ${socket.id} joined conversation: ${conversationId}`);
+    // Gå med i rummet endast om vi inte redan är med
+    if (!joinedRooms.has(conversationId)) {
+      socket.join(conversationId);
+      joinedRooms.add(conversationId);
+      console.log(`User ${socket.id} joined conversation: ${conversationId}`);
+    }
   });
 
-  // Lyssna efter nya meddelanden
   socket.on('send_message', async (data) => {
     const { conversationId, message } = data;
 
-    // Spara meddelandet i databasen
-    // ... din existerande logik för att spara meddelanden ...
+    try {
+      // Spara meddelandet i databasen
+      // ... din existerande logik för att spara meddelanden ...
 
-    // Skicka meddelandet till alla i konversationen
-    io.to(conversationId).emit('receive_message', message);
+      // Skicka meddelandet till alla ANDRA i konversationen
+      socket.to(conversationId).emit('receive_message', message);
+    } catch (error) {
+      console.error('Error handling message:', error);
+    }
   });
 
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
+    joinedRooms.clear();
   });
 });
 

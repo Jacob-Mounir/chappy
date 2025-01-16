@@ -17,32 +17,37 @@ export const useSocket = () => {
     const token = localStorage.getItem('token');
     socketRef.current = io(SOCKET_URL, {
       withCredentials: true,
-      auth: {
-        token
-      }
+      auth: { token }
     });
 
     // Lyssna efter nya meddelanden
-    socketRef.current.on('receive_message', (message) => {
+    const handleMessage = (message: any) => {
+      // Kontrollera att meddelandet inte redan finns
       addMessage(message);
-    });
+    };
+
+    socketRef.current.on('receive_message', handleMessage);
 
     return () => {
+      socketRef.current?.off('receive_message', handleMessage);
       socketRef.current?.disconnect();
     };
   }, [addMessage]);
 
-  // Funktion för att gå med i en konversation
-  const joinConversation = (conversationId: string) => {
-    socketRef.current?.emit('join_conversation', conversationId);
-  };
-
-  // Funktion för att skicka meddelande
+  // Funktion för att skicka meddelande med optimistisk uppdatering
   const sendMessage = (conversationId: string, message: any) => {
+    // Lägg till meddelandet lokalt direkt (optimistisk uppdatering)
+    addMessage(message);
+
+    // Skicka via Socket.IO
     socketRef.current?.emit('send_message', {
       conversationId,
       message
     });
+  };
+
+  const joinConversation = (conversationId: string) => {
+    socketRef.current?.emit('join_conversation', conversationId);
   };
 
   return {

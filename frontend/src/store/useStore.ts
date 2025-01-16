@@ -511,9 +511,20 @@ export const useStore = create<StoreState>()(
       },
 
       addMessage: (message: DirectMessage) => {
-        set((state) => ({
-          directMessages: [...state.directMessages, message]
-        }));
+        set((state) => {
+          // Kontrollera om meddelandet redan finns
+          const isDuplicate = state.directMessages.some(
+            (m) => m._id === message._id
+          );
+
+          if (isDuplicate) {
+            return state; // Returnera oförändrad state om meddelandet redan finns
+          }
+
+          return {
+            directMessages: [...state.directMessages, message]
+          };
+        });
       }
     }),
     {
