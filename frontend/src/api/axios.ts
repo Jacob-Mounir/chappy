@@ -6,16 +6,12 @@ const API_URL = isDevelopment
   ? 'http://localhost:5001'
   : 'https://chappyv.onrender.com';
 
-const FRONTEND_URL = isDevelopment
-  ? 'http://localhost:5173'
-  : 'https://chappy-frontend.onrender.com';
-
 const api = axios.create({
   baseURL: API_URL,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
-    'Origin': FRONTEND_URL
+    'Accept': 'application/json'
   },
   timeout: 30000
 });
