@@ -9,7 +9,7 @@ import { useStore } from './store/useStore';
 import { useEffect } from 'react';
 
 function App() {
-  const { isInitialized, checkAuth } = useStore();
+  const { isInitialized, checkAuth, userState } = useStore();
 
   useEffect(() => {
     checkAuth();
@@ -23,13 +23,26 @@ function App() {
     );
   }
 
+  const isLoggedIn = userState?.type === 'authenticated' || userState?.type === 'guest';
+
   return (
     <ThemeProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route
+            path="/"
+            element={isLoggedIn ? <Navigate to="/chat" replace /> : <Navigate to="/login" replace />}
+          />
+
+          <Route
+            path="/login"
+            element={isLoggedIn ? <Navigate to="/chat" replace /> : <Login />}
+          />
+          <Route
+            path="/register"
+            element={isLoggedIn ? <Navigate to="/chat" replace /> : <Register />}
+          />
+
           <Route
             path="/chat"
             element={
@@ -54,7 +67,11 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+
+          <Route
+            path="*"
+            element={isLoggedIn ? <Navigate to="/chat" replace /> : <Navigate to="/login" replace />}
+          />
         </Routes>
       </Router>
     </ThemeProvider>

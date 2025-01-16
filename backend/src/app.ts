@@ -6,6 +6,8 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import { seedData } from './config/seed';
 import { AuthRequest } from './types/express';
+import { Server } from 'socket.io';
+import { createServer } from 'http';
 
 dotenv.config();
 
@@ -75,6 +77,43 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: [
+      'http://localhost:5173',
+      'https://chappy-frontend.onrender.com'
+    ],
+    credentials: true
+  }
+});
+
+// Hantera Socket.IO anslutningar
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  // Lyssna efter när en användare ansluter till ett rum (konversation)
+  socket.on('join_conversation', (conversationId) => {
+    socket.join(conversationId);
+    console.log(`User ${socket.id} joined conversation: ${conversationId}`);
+  });
+
+  // Lyssna efter nya meddelanden
+  socket.on('send_message', async (data) => {
+    const { conversationId, message } = data;
+
+    // Spara meddelandet i databasen
+    // ... din existerande logik för att spara meddelanden ...
+
+    // Skicka meddelandet till alla i konversationen
+    io.to(conversationId).emit('receive_message', message);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
 const startServer = async () => {
   try {
     await connectDB();
@@ -82,7 +121,7 @@ const startServer = async () => {
 
     if (mongoose.connection.readyState === 1) {
       const PORT = process.env.PORT || 5001;
-      app.listen(PORT, () => {
+      httpServer.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
         console.log(`MongoDB connected: ${mongoose.connection.host}`);
       });

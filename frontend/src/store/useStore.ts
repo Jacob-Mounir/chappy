@@ -34,19 +34,24 @@ interface Channel {
   members: string[]
 }
 
-interface Message {
-  _id: string
-  content: string
-  sender: AuthenticatedUser | { username: string; type: 'guest' }
-  createdAt: string
+interface BaseMessage {
+  _id?: string;
+  content: string;
+  createdAt: string;
 }
 
-interface DirectMessage {
+interface Message extends BaseMessage {
+  sender: {
+    _id: string;
+    username: string;
+    type?: 'authenticated' | 'guest';
+  };
+}
+
+interface DirectMessage extends BaseMessage {
   _id: string;
-  content: string;
   sender: AuthenticatedUser;
   recipient: AuthenticatedUser;
-  createdAt: string;
 }
 
 interface Conversation {
@@ -99,6 +104,8 @@ interface StoreState {
 
   // Guest actions
   setGuestName: (name: string) => void
+
+  addMessage: (message: DirectMessage) => void
 }
 
 // Helper function to check if user is authenticated
@@ -501,6 +508,12 @@ export const useStore = create<StoreState>()(
       setGuestName: (name) => {
         console.log('Setting guest name in store:', name);
         set({ guestName: name });
+      },
+
+      addMessage: (message: DirectMessage) => {
+        set((state) => ({
+          directMessages: [...state.directMessages, message]
+        }));
       }
     }),
     {

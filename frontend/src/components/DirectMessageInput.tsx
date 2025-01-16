@@ -1,19 +1,36 @@
 import { useState, FormEvent } from 'react';
 import { useStore } from '../store/useStore';
+import { useSocket } from '../hooks/useSocket';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Send } from 'lucide-react';
+import type { DirectMessage } from '../types/store';
 
 export function DirectMessageInput() {
-  const { sendDirectMessage, currentConversation, error } = useStore();
+  const { currentConversation, userState } = useStore();
+  const { sendMessage } = useSocket();
   const [content, setContent] = useState('');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || !currentConversation) return;
+    if (!content.trim() || !currentConversation || !userState || userState.type !== 'authenticated') return;
 
     try {
-      await sendDirectMessage(content.trim(), currentConversation._id);
+      const message: DirectMessage = {
+        _id: Date.now().toString(), // Temporärt ID tills servern ger oss ett riktigt
+        content: content.trim(),
+        sender: userState,
+        recipient: {
+          _id: currentConversation._id,
+          username: currentConversation.username,
+          email: '', // Detta är inte optimalt men krävs av typen
+          type: 'authenticated'
+        },
+        createdAt: new Date().toISOString()
+      };
+
+      // Skicka via Socket.IO
+      sendMessage(currentConversation._id, message);
       setContent('');
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -22,11 +39,6 @@ export function DirectMessageInput() {
 
   return (
     <form onSubmit={handleSubmit} className="p-4 border-t bg-background">
-      {error && (
-        <div className="mb-2 p-2 text-sm text-destructive bg-destructive/10 rounded">
-          {error}
-        </div>
-      )}
       <div className="flex gap-2">
         <Input
           value={content}

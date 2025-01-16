@@ -5,8 +5,9 @@ import { DirectMessageList } from '../components/DirectMessageList';
 import { DirectMessageInput } from '../components/DirectMessageInput';
 import { ScrollArea } from '../components/ui/scroll-area';
 import { Button } from '../components/ui/button';
-import { MessageSquare, Users, ArrowLeft } from 'lucide-react';
+import { MessageSquare, Users, ArrowLeft, Menu } from 'lucide-react';
 import api from '../api/axios';
+import { useSocket } from '../hooks/useSocket';
 
 interface User {
   _id: string;
@@ -19,6 +20,23 @@ export function DirectMessages() {
   const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'conversations' | 'users'>('conversations');
+  const [showSidebar, setShowSidebar] = useState(true);
+  const { joinConversation } = useSocket();
+
+  // Automatiskt dölja sidebaren på mobil
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setShowSidebar(!currentConversation);
+      } else {
+        setShowSidebar(true);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [currentConversation]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -40,12 +58,36 @@ export function DirectMessages() {
       username: user.username,
       isOnline: user.isOnline
     });
+
+    // Anslut till konversationens rum
+    joinConversation(user._id);
+
+    if (window.innerWidth < 768) {
+      setShowSidebar(false);
+    }
+  };
+
+  const handleBack = () => {
+    setCurrentConversation(null);
+    if (window.innerWidth < 768) {
+      setShowSidebar(true);
+    }
   };
 
   return (
     <div className="flex h-screen bg-background">
-      <aside className="w-72 border-r flex flex-col">
-        <div className="p-4 border-b">
+      {/* Sidebar */}
+      <aside className={`
+        ${showSidebar ? 'flex' : 'hidden'}
+        md:flex flex-col
+        w-full md:w-72
+        border-r
+        absolute md:relative
+        bg-background
+        z-10
+        h-full
+      `}>
+        <div className="p-4 border-b flex justify-between items-center">
           <h2 className="font-semibold text-lg">Messages</h2>
         </div>
 
@@ -57,7 +99,7 @@ export function DirectMessages() {
             onClick={() => setActiveTab('conversations')}
           >
             <MessageSquare className="h-4 w-4" />
-            Chats
+            <span className="hidden sm:inline">Chats</span>
           </Button>
           <Button
             variant={activeTab === 'users' ? 'secondary' : 'ghost'}
@@ -65,7 +107,7 @@ export function DirectMessages() {
             onClick={() => setActiveTab('users')}
           >
             <Users className="h-4 w-4" />
-            Users
+            <span className="hidden sm:inline">Users</span>
           </Button>
         </div>
 
@@ -88,7 +130,7 @@ export function DirectMessages() {
                     key={conv._id}
                     variant={currentConversation?._id === conv._id ? "secondary" : "ghost"}
                     className="w-full justify-start gap-2"
-                    onClick={() => setCurrentConversation(conv)}
+                    onClick={() => startConversation(conv)}
                   >
                     <MessageSquare className="h-4 w-4" />
                     <div className="flex-1 text-left">
@@ -124,19 +166,26 @@ export function DirectMessages() {
         </ScrollArea>
       </aside>
 
-      <main className="flex-1 flex flex-col">
+      {/* Main Chat Area */}
+      <main className={`
+        flex-1
+        flex
+        flex-col
+        ${!showSidebar ? 'block' : 'hidden'}
+        md:block
+      `}>
         {currentConversation ? (
           <>
             <div className="p-4 border-b flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
+                onClick={handleBack}
                 className="md:hidden"
-                onClick={() => setCurrentConversation(null)}
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div>
+              <div className="flex-1">
                 <h2 className="font-semibold">
                   {currentConversation.username}
                 </h2>
@@ -144,6 +193,14 @@ export function DirectMessages() {
                   <p className="text-sm text-muted-foreground">Online</p>
                 )}
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setShowSidebar(true)}
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
             </div>
             <DirectMessageList />
             <DirectMessageInput />
