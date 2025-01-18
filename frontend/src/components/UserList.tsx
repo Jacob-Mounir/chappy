@@ -1,43 +1,66 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
-import { Card } from './ui/card';
+import { ScrollArea } from './ui/scroll-area';
+import { User } from 'lucide-react';
+import api from '../api/axios';
 
-interface User {
+interface ChannelUser {
   _id: string;
   username: string;
   isOnline?: boolean;
 }
 
 export function UserList() {
-  const [users, setUsers] = useState<User[]>([]);
   const { currentChannel } = useStore();
+  const [users, setUsers] = useState<ChannelUser[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Hämta bara användare för den aktuella kanalen
-    if (currentChannel) {
-      fetch(`/api/channels/${currentChannel._id}/users`)
-        .then(res => res.json())
-        .then(data => setUsers(data))
-        .catch(console.error);
-    }
+    const fetchUsers = async () => {
+      if (!currentChannel) return;
+
+      try {
+        const response = await api.get(`/channels/${currentChannel._id}/users`);
+        setUsers(response.data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        setError('Failed to load users');
+      }
+    };
+
+    fetchUsers();
   }, [currentChannel]);
 
-  if (!users.length) return null;
+  if (!currentChannel) return null;
 
   return (
-    <Card className="p-4">
-      <h3 className="font-semibold mb-2">Online Users</h3>
-      <div className="space-y-1">
-        {users.map(user => (
-          <div
-            key={user._id}
-            className="flex items-center gap-2"
-          >
-            <div className={`w-2 h-2 rounded-full ${user.isOnline ? 'bg-green-500' : 'bg-gray-300'}`} />
-            <span className="text-sm">{user.username}</span>
-          </div>
-        ))}
+    <div className="w-60 border-l bg-background hidden md:block">
+      <div className="p-4 border-b">
+        <h2 className="font-semibold">Channel Members</h2>
       </div>
-    </Card>
+      <ScrollArea className="h-[calc(100vh-4rem)]">
+        <div className="p-2">
+          {error ? (
+            <div className="text-sm text-destructive p-2">{error}</div>
+          ) : (
+            <div className="space-y-2">
+              {users.map((user) => (
+                <div
+                  key={user._id}
+                  className="flex items-center gap-2 p-2 rounded-lg hover:bg-accent"
+                >
+                  <User className="h-4 w-4" />
+                  <span className="text-sm">{user.username}</span>
+                  {user.isOnline && (
+                    <span className="w-2 h-2 bg-green-500 rounded-full ml-auto" />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+    </div>
   );
 }
