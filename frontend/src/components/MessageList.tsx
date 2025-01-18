@@ -43,12 +43,21 @@ export function MessageList() {
             <Card key={message._id} className="p-3 md:p-4 max-w-[85%] md:max-w-2xl mx-auto">
               <div className="flex flex-col space-y-1">
                 <div className="flex justify-between items-start gap-2">
-                  <span className="font-medium text-sm md:text-base">
-                    {message.sender.type === 'guest'
-                      ? message.sender.username
-                      : message.sender?.username || 'Unknown User'}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm md:text-base">
+                      {message.sender.username || 'Anonymous'}
+                    </span>
+                    {message.sender.type && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                        message.sender.type === 'guest'
+                          ? 'bg-muted text-muted-foreground'
+                          : 'bg-primary/10 text-primary'
+                      }`}>
+                        {message.sender.type === 'guest' ? 'GUEST' : 'MEMBER'}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {format(new Date(message.createdAt), "HH:mm")}
                   </span>
                 </div>

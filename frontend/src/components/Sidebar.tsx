@@ -106,7 +106,9 @@ export function Sidebar({ onClose }: SidebarProps) {
                     <Button
                       key={channel._id}
                       variant={currentChannel?._id === channel._id ? "secondary" : "ghost"}
-                      className="w-full justify-start gap-2"
+                      className={`w-full justify-start gap-2 ${
+                        channel.isPrivate ? 'text-muted-foreground hover:text-primary' : ''
+                      }`}
                       onClick={() => {
                         if (channel.isPrivate && userState?.type !== 'authenticated') {
                           setError('You must be logged in to join private channels');
@@ -120,19 +122,21 @@ export function Sidebar({ onClose }: SidebarProps) {
                         onClose?.();
                       }}
                     >
-                      {channel.isPrivate ? (
-                        <Lock className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <Hash className="h-4 w-4" />
-                      )}
-                      <span className="flex items-center gap-2">
-                        {channel.name}
-                        {channel.isPrivate && (
-                          <span className="text-xs text-muted-foreground">
-                            {isPrivateAndNotMember ? '(No access)' : '(Private)'}
-                          </span>
+                      <div className="flex items-center gap-2 min-w-[24px]">
+                        {channel.isPrivate ? (
+                          <Lock className="h-4 w-4" />
+                        ) : (
+                          <Hash className="h-4 w-4" />
                         )}
+                      </div>
+                      <span className="flex-1 truncate">
+                        {channel.name}
                       </span>
+                      {channel.isPrivate && (
+                        <span className="text-[10px] font-medium ml-2 px-1.5 py-0.5 rounded-full bg-muted">
+                          {isPrivateAndNotMember ? 'NO ACCESS' : 'PRIVATE'}
+                        </span>
+                      )}
                     </Button>
                   );
                 })
