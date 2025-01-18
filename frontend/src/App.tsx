@@ -45,30 +45,42 @@ function App() {
           />
 
           <Route
-            path="/chat"
+            path="/chat/*"
             element={
               <ProtectedRoute>
-                <MainLayout />
+                <Routes>
+                  <Route index element={<MainLayout />} />
+                  <Route
+                    path="channels/new"
+                    element={
+                      userState?.type === 'authenticated' ? <CreateChannel /> : <Navigate to="/chat" replace />
+                    }
+                  />
+                </Routes>
               </ProtectedRoute>
             }
           />
 
           <Route
-            path="/channels/new"
-            element={
-              <ProtectedRoute>
-                <CreateChannel />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/dm"
+            path="/messages"
             element={
               <ProtectedRoute>
                 <DirectMessages />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/messages/:userId"
+            element={
+              <ProtectedRoute>
+                <DirectMessages />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="*"
+            element={isLoggedIn ? <Navigate to="/chat" replace /> : <Navigate to="/login" replace />}
           />
         </Routes>
       </Router>

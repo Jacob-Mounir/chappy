@@ -78,7 +78,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => navigate('/channels/new')}
+                  onClick={() => navigate('/chat/channels/new')}
                   className="rounded-full"
                 >
                   <Plus className="h-4 w-4" />
