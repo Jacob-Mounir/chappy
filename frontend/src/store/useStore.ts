@@ -402,10 +402,10 @@ export const useStore = create<StoreState>()(
         if (!currentChannel) return;
 
         try {
-          // Simple check for nyheter channel
-          if (currentChannel.name === 'nyheter' && userState?.type !== 'authenticated') {
+          // Block guest messages in nyheter channel immediately
+          if (currentChannel.name.toLowerCase() === 'nyheter' && userState?.type !== 'authenticated') {
             set({ error: 'Only logged in users can send messages in the news channel' });
-            throw new Error('Only logged in users can send messages in the news channel');
+            return; // Return early without trying to send
           }
 
           const messageData = {
@@ -424,7 +424,7 @@ export const useStore = create<StoreState>()(
           }));
         } catch (error: any) {
           console.error('Failed to send message:', error);
-          throw error;
+          set({ error: error.message || 'Failed to send message' });
         }
       },
 
