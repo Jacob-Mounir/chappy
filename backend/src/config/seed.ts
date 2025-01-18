@@ -58,6 +58,11 @@ export const seedData = async () => {
         createdBy: adminUser._id
       });
       console.log('#nyheter channel created successfully');
+    } else if (!newsChannel.isPrivate) {
+      // Update existing nyheter channel to be private if it's not already
+      newsChannel.isPrivate = true;
+      await newsChannel.save();
+      console.log('#nyheter channel updated to private');
     }
 
     console.log('Seed data created successfully');
