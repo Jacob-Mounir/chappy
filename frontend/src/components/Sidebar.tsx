@@ -19,7 +19,8 @@ export function Sidebar({ onClose }: SidebarProps) {
     isLoading,
     userState,
     fetchChannels,
-    fetchConversations
+    fetchConversations,
+    setError
   } = useStore();
 
   const navigate = useNavigate();
@@ -92,8 +93,9 @@ export function Sidebar({ onClose }: SidebarProps) {
                 <div className="text-sm text-muted-foreground p-2">No channels yet</div>
               ) : (
                 channels.map((channel) => {
-                  // Debug logging for each channel
-                  console.log(`Channel ${channel.name}:`, { isPrivate: channel.isPrivate });
+                  const isPrivateAndNotMember = channel.isPrivate &&
+                    userState?.type === 'authenticated' &&
+                    !channel.members.includes(userState._id);
 
                   return (
                     <Button
@@ -101,6 +103,15 @@ export function Sidebar({ onClose }: SidebarProps) {
                       variant={currentChannel?._id === channel._id ? "secondary" : "ghost"}
                       className="w-full justify-start gap-2"
                       onClick={() => {
+                        if (channel.isPrivate && userState?.type !== 'authenticated') {
+                          // Show error in store state instead of alert
+                          setError('You must be logged in to join private channels');
+                          return;
+                        }
+                        if (isPrivateAndNotMember) {
+                          setError('You are not a member of this private channel');
+                          return;
+                        }
                         joinChannel(channel._id);
                         onClose?.();
                       }}
@@ -112,7 +123,11 @@ export function Sidebar({ onClose }: SidebarProps) {
                       )}
                       <span className="flex items-center gap-2">
                         {channel.name}
-                        {channel.isPrivate && <span className="text-xs text-muted-foreground">(Private)</span>}
+                        {channel.isPrivate && (
+                          <span className="text-xs text-muted-foreground">
+                            {isPrivateAndNotMember ? '(No access)' : '(Private)'}
+                          </span>
+                        )}
                       </span>
                     </Button>
                   );

@@ -106,6 +106,8 @@ interface StoreState {
   setGuestName: (name: string) => void
 
   addMessage: (message: DirectMessage) => void
+
+  setError: (message: string) => void
 }
 
 // Helper function to check if user is authenticated
@@ -303,14 +305,20 @@ export const useStore = create<StoreState>()(
 
       clearError: () => set({ error: null }),
 
+      setError: (message: string) => set({ error: message }),
+
       // Channel actions
       fetchChannels: async () => {
         try {
           const { data } = await api.get('/channels');
-          set({ channels: data || [] });
-        } catch (error) {
+          set({ channels: data || [], error: null });
+        } catch (error: any) {
           console.error('Failed to fetch channels:', error);
-          set({ channels: [] });
+          const errorMessage = error.response?.data?.message || 'Failed to fetch channels';
+          set({
+            channels: [],
+            error: errorMessage
+          });
         }
       },
 
@@ -330,11 +338,21 @@ export const useStore = create<StoreState>()(
       joinChannel: async (channelId) => {
         if (!channelId) return;
         try {
+          const channel = get().channels.find(c => c._id === channelId);
+
+          // Check if channel is private and user is not authenticated
+          if (channel?.isPrivate && get().userState?.type !== 'authenticated') {
+            throw new Error('You must be logged in to join private channels');
+          }
+
           const { data } = await api.post(`/channels/${channelId}/join`);
-          set({ currentChannel: data });
+          set({ currentChannel: data, error: null });
           await get().fetchMessages(channelId);
-        } catch (error) {
+        } catch (error: any) {
           console.error('Failed to join channel:', error);
+          const errorMessage = error.response?.data?.message || error.message || 'Failed to join channel';
+          set({ error: errorMessage });
+          throw error;
         }
       },
 
