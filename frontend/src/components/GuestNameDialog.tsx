@@ -1,47 +1,41 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { Input } from './ui/input';
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
-import { useStore } from '../store/useStore';
+import { Input } from './ui/input';
 
 interface GuestNameDialogProps {
-  onSubmit: (name: string) => void;
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (guestName: string) => Promise<void>;
 }
 
-export function GuestNameDialog({ onSubmit, onClose }: GuestNameDialogProps) {
-  console.log("Rendering GuestNameDialog");
+export function GuestNameDialog({ open, onOpenChange, onSubmit }: GuestNameDialogProps) {
+  const [guestName, setGuestName] = useState('');
 
-  const [inputValue, setInputValue] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputValue.trim()) {
-      onSubmit(inputValue.trim());
+    if (guestName.trim()) {
+      await onSubmit(guestName.trim());
+      onOpenChange(false);
+      setGuestName('');
     }
   };
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Welcome to Chappy!</DialogTitle>
-          <DialogDescription>
-            Choose a display name to start chatting
-          </DialogDescription>
+          <DialogTitle>Enter Guest Name</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            placeholder="Enter your display name"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Enter your guest name"
+            value={guestName}
+            onChange={(e) => setGuestName(e.target.value)}
             required
-            minLength={2}
-            maxLength={20}
-            autoFocus
           />
-          <Button type="submit" className="w-full" disabled={!inputValue.trim()}>
-            Start Chatting
+          <Button type="submit" className="w-full">
+            Continue
           </Button>
         </form>
       </DialogContent>

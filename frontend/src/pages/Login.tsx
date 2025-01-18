@@ -12,7 +12,7 @@ export function Login() {
   const [password, setPassword] = useState("");
   const [showGuestDialog, setShowGuestDialog] = useState(false);
   const navigate = useNavigate();
-  const { login, loginAsGuest, isLoading, error } = useStore();
+  const { login, loginAsGuest, isLoading, error, setGuestName } = useStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,16 +25,11 @@ export function Login() {
   };
 
   const handleGuestLogin = () => {
-    console.log("Opening guest dialog");
     setShowGuestDialog(true);
-    setTimeout(() => {
-      console.log("showGuestDialog state:", showGuestDialog);
-    }, 0);
   };
 
-  const handleGuestNameSubmit = async (name: string) => {
+  const handleGuestNameSubmit = async (name: string): Promise<void> => {
     try {
-      const { setGuestName } = useStore.getState();
       console.log("Setting guest name:", name);
       setGuestName(name);
       await loginAsGuest();
@@ -125,12 +120,11 @@ export function Login() {
           {isLoading ? <LoadingSpinner /> : "Continue as Guest"}
         </Button>
 
-        {showGuestDialog && (
-          <GuestNameDialog
-            onSubmit={handleGuestNameSubmit}
-            onClose={() => setShowGuestDialog(false)}
-          />
-        )}
+        <GuestNameDialog
+          open={showGuestDialog}
+          onOpenChange={setShowGuestDialog}
+          onSubmit={handleGuestNameSubmit}
+        />
 
         <div className="text-center text-sm">
           <span className="text-muted-foreground">Don't have an account? </span>

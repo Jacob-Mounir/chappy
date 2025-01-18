@@ -1,92 +1,120 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useStore } from '../store/useStore';
 import { useNavigate, Link } from 'react-router-dom';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Card } from './ui/card';
+import LoadingSpinner from './LoadingSpinner';
+import { GuestNameDialog } from './GuestNameDialog';
 
-export default function Login() {
+export function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const { login } = useAuth();
+  const [showGuestDialog, setShowGuestDialog] = useState(false);
+  const { login, loginAsGuest, isLoading, error } = useStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
     try {
-      await login(username, password);
+      await login({ username, password });
       navigate('/chat');
-    } catch (err: any) {
-      setError(err.message || 'Failed to login');
+    } catch (error) {
+      console.error('Login failed:', error);
+    }
+  };
+
+  const handleGuestLogin = async (guestName: string) => {
+    try {
+      await loginAsGuest();
+      navigate('/chat');
+    } catch (error) {
+      console.error('Guest login failed:', error);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md p-6 space-y-6">
+        <div className="space-y-2 text-center">
+          <h1 className="text-3xl font-bold">Welcome to Chappy</h1>
+          <p className="text-muted-foreground">Sign in to start chatting</p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="username" className="sr-only">
-                Username
-              </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                autoComplete="username"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-          </div>
 
+        <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="text-red-500 text-sm text-center">{error}</div>
+            <div className="p-3 text-sm text-destructive bg-destructive/10 rounded">
+              {error}
+            </div>
           )}
 
-          <div>
-            <button
-              type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Sign in
-            </button>
+          <div className="space-y-2">
+            <Input
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
           </div>
+
+          <div className="space-y-2">
+            <Input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isLoading}
+          >
+            {isLoading ? <LoadingSpinner /> : 'Sign In'}
+          </Button>
         </form>
-        <div className="text-center">
+
+        <div className="space-y-4">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => setShowGuestDialog(true)}
+            disabled={isLoading}
+          >
+            Continue as Guest
+          </Button>
+        </div>
+
+        <div className="text-center text-sm">
+          Don't have an account?{' '}
           <Link
             to="/register"
-            className="font-medium text-indigo-600 hover:text-indigo-500"
+            className="font-medium text-primary hover:underline"
           >
-            Don't have an account? Sign up
+            Sign up
           </Link>
         </div>
-      </div>
+      </Card>
+
+      <GuestNameDialog
+        open={showGuestDialog}
+        onOpenChange={setShowGuestDialog}
+        onSubmit={handleGuestLogin}
+      />
     </div>
   );
 }

@@ -28,7 +28,7 @@ export function MainLayout() {
 
   const isAuthenticated = userState?.type === 'authenticated';
 
-  const handleGuestNameSubmit = (name: string) => {
+  const handleGuestNameSubmit = async (name: string): Promise<void> => {
     setGuestName(name);
   };
 
@@ -39,8 +39,9 @@ export function MainLayout() {
   if (userState?.type === 'guest' && !guestName) {
     return (
       <GuestNameDialog
+        open={true}
+        onOpenChange={() => {}}
         onSubmit={handleGuestNameSubmit}
-        onClose={() => {}}
       />
     );
   }
