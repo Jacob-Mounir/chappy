@@ -70,6 +70,11 @@ router.post('/channel/:channelId', requireAuth, async (req: AuthRequest, res) =>
       return res.status(404).json({ message: 'Channel not found' });
     }
 
+    // Check if this is the "nyheter" channel
+    if (channel.name === 'nyheter' && req.userState?.type !== 'authenticated') {
+      return res.status(403).json({ message: 'Only authenticated users can send messages in the news channel' });
+    }
+
     // For private channels, user must be authenticated and a member
     if (channel.isPrivate) {
       if (req.userState?.type !== 'authenticated') {
