@@ -107,7 +107,11 @@ export function Sidebar({ onClose }: SidebarProps) {
                       key={channel._id}
                       variant={currentChannel?._id === channel._id ? "secondary" : "ghost"}
                       className={`w-full justify-start gap-2 ${
-                        channel.isPrivate ? 'text-muted-foreground hover:text-primary' : ''
+                        currentChannel?._id === channel._id
+                          ? 'bg-accent'
+                          : channel.isPrivate
+                            ? 'text-muted-foreground hover:text-primary hover:bg-accent/50'
+                            : 'hover:bg-accent/50'
                       }`}
                       onClick={() => {
                         if (channel.isPrivate && userState?.type !== 'authenticated') {
@@ -124,16 +128,20 @@ export function Sidebar({ onClose }: SidebarProps) {
                     >
                       <div className="flex items-center gap-2 min-w-[24px]">
                         {channel.isPrivate ? (
-                          <Lock className="h-4 w-4" />
+                          <Lock className={`h-4 w-4 ${currentChannel?._id === channel._id ? 'text-primary' : ''}`} />
                         ) : (
                           <Hash className="h-4 w-4" />
                         )}
                       </div>
-                      <span className="flex-1 truncate">
+                      <span className={`flex-1 truncate ${currentChannel?._id === channel._id ? 'font-medium' : ''}`}>
                         {channel.name}
                       </span>
                       {channel.isPrivate && (
-                        <span className="text-[10px] font-medium ml-2 px-1.5 py-0.5 rounded-full bg-muted">
+                        <span className={`text-[10px] font-medium ml-2 px-1.5 py-0.5 rounded-full ${
+                          currentChannel?._id === channel._id
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-muted text-muted-foreground'
+                        }`}>
                           {isPrivateAndNotMember ? 'NO ACCESS' : 'PRIVATE'}
                         </span>
                       )}
