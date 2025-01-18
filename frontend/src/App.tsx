@@ -4,6 +4,7 @@ import { MainLayout } from './components/MainLayout';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { DirectMessages } from './pages/DirectMessages';
+import { CreateChannel } from './pages/CreateChannel';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useStore } from './store/useStore';
 import { useEffect } from 'react';
@@ -51,26 +52,23 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
-            path="/messages"
+            path="/channels/new"
             element={
               <ProtectedRoute>
-                <DirectMessages />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/messages/:userId"
-            element={
-              <ProtectedRoute>
-                <DirectMessages />
+                <CreateChannel />
               </ProtectedRoute>
             }
           />
 
           <Route
-            path="*"
-            element={isLoggedIn ? <Navigate to="/chat" replace /> : <Navigate to="/login" replace />}
+            path="/dm"
+            element={
+              <ProtectedRoute>
+                <DirectMessages />
+              </ProtectedRoute>
+            }
           />
         </Routes>
       </Router>
