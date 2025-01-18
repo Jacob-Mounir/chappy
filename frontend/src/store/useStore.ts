@@ -85,7 +85,7 @@ interface StoreState {
 
   // Auth actions
   login: (credentials: { username: string; password: string }) => Promise<void>
-  loginAsGuest: () => Promise<void>
+  loginAsGuest: () => Promise<boolean>
   register: (userData: { username: string; email: string; password: string }) => Promise<void>
   logout: () => void
   clearError: () => void
@@ -272,15 +272,21 @@ export const useStore = create<StoreState>()(
             token: null,
             isLoading: false,
             error: null,
-            isInitialized: true
+            isInitialized: true,
+            channels: [],  // Reset channels
+            messages: [],  // Reset messages
+            currentChannel: null  // Reset current channel
           });
 
+          // Fetch channels without auth
           await get().fetchChannels();
+          return true;
         } catch (error: any) {
           console.error('Guest login error:', error);
           set({
             error: error.message || 'Failed to login as guest',
-            isLoading: false
+            isLoading: false,
+            userState: null
           });
           throw error;
         }
@@ -319,15 +325,17 @@ export const useStore = create<StoreState>()(
       fetchChannels: async () => {
         try {
           const { data } = await api.get('/channels');
-          // Ensure we have the member information for private channels
           const channelsWithMembers = data.map((channel: any) => ({
             ...channel,
             members: channel.members || []
           }));
-          set({ channels: channelsWithMembers || [] });
-        } catch (error) {
+          set({ channels: channelsWithMembers || [], error: null });
+        } catch (error: any) {
           console.error('Failed to fetch channels:', error);
-          set({ channels: [] });
+          set({
+            channels: [],
+            error: error.message || 'Failed to fetch channels'
+          });
         }
       },
 

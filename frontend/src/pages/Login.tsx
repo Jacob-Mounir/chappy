@@ -30,11 +30,11 @@ export function Login() {
 
   const handleGuestNameSubmit = async (name: string): Promise<void> => {
     try {
-      console.log("Setting guest name:", name);
       setGuestName(name);
-      await loginAsGuest();
-      setShowGuestDialog(false);
-      navigate("/chat");
+      const success = await loginAsGuest();
+      if (success) {
+        navigate("/chat");
+      }
     } catch (error) {
       console.error("Guest login failed:", error);
     }
