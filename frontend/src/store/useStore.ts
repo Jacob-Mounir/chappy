@@ -31,7 +31,11 @@ interface Channel {
   name: string
   description?: string
   isPrivate: boolean
+  isRestricted?: boolean
   members: string[]
+  createdBy?: any
+  createdAt?: string
+  updatedAt?: string
 }
 
 interface BaseMessage {

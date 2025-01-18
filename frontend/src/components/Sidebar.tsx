@@ -109,11 +109,15 @@ export function Sidebar({ onClose }: SidebarProps) {
                       className={`w-full justify-start gap-2 ${
                         currentChannel?._id === channel._id
                           ? 'bg-accent'
-                          : channel.isPrivate
+                          : channel.isPrivate || channel.isRestricted
                             ? 'text-muted-foreground hover:text-primary hover:bg-accent/50'
                             : 'hover:bg-accent/50'
                       }`}
                       onClick={() => {
+                        if (channel.isRestricted) {
+                          setError('You must be logged in to access the news channel');
+                          return;
+                        }
                         if (channel.isPrivate && userState?.type !== 'authenticated') {
                           setError('You must be logged in to join private channels');
                           return;
@@ -127,7 +131,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                       }}
                     >
                       <div className="flex items-center gap-2 min-w-[24px]">
-                        {channel.isPrivate ? (
+                        {channel.isPrivate || channel.isRestricted ? (
                           <Lock className={`h-4 w-4 ${currentChannel?._id === channel._id ? 'text-primary' : ''}`} />
                         ) : (
                           <Hash className="h-4 w-4" />
@@ -136,13 +140,13 @@ export function Sidebar({ onClose }: SidebarProps) {
                       <span className={`flex-1 truncate ${currentChannel?._id === channel._id ? 'font-medium' : ''}`}>
                         {channel.name}
                       </span>
-                      {channel.isPrivate && (
+                      {(channel.isPrivate || channel.isRestricted) && (
                         <span className={`text-[10px] font-medium ml-2 px-1.5 py-0.5 rounded-full ${
                           currentChannel?._id === channel._id
                             ? 'bg-primary/20 text-primary'
                             : 'bg-muted text-muted-foreground'
                         }`}>
-                          {isPrivateAndNotMember ? 'NO ACCESS' : 'PRIVATE'}
+                          {channel.isRestricted ? 'LOGIN REQUIRED' : isPrivateAndNotMember ? 'NO ACCESS' : 'PRIVATE'}
                         </span>
                       )}
                     </Button>

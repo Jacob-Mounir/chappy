@@ -25,28 +25,28 @@ router.get('/', async (req: AuthRequest, res) => {
         ]
       };
     } else {
-      // Guest users can see all public channels except 'nyheter'
-      query = {
-        isPrivate: false,
-        name: { $ne: 'nyheter' }
-      };
+      // Guest users can see all public channels, but nyheter will be marked as restricted
+      query = { isPrivate: false };
     }
+
+    console.log('Channel query:', query); // Debug log
 
     const channels = await Channel.find(query)
       .populate('members', 'username')
       .populate('createdBy', 'username')
       .sort({ createdAt: -1 });
 
-    // Format channels for response
+    // Format channels for response, marking nyheter as restricted for guests
     const formattedChannels = channels.map(channel => ({
       _id: channel._id,
       name: channel.name,
       description: channel.description,
-      isPrivate: channel.isPrivate,
+      isPrivate: channel.name === 'nyheter' ? true : channel.isPrivate, // Force nyheter to appear private for guests
       createdBy: channel.createdBy,
       members: channel.members.map(member => member._id),
       createdAt: channel.createdAt,
-      updatedAt: channel.updatedAt
+      updatedAt: channel.updatedAt,
+      isRestricted: channel.name === 'nyheter' && req.userState?.type !== 'authenticated'
     }));
 
     res.json(formattedChannels);
