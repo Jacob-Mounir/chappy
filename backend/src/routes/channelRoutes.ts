@@ -11,10 +11,10 @@ const router = Router();
 // Get all channels (public ones and private ones where user is a member)
 router.get('/', async (req: AuthRequest, res) => {
   try {
-    let query: any = { isPrivate: false };
+    let query: any;
 
-    // If user is authenticated, also include private channels they're a member of
     if (req.userState?.type === 'authenticated') {
+      // Authenticated users can see all public channels and private channels they're members of
       query = {
         $or: [
           { isPrivate: false },
@@ -23,6 +23,12 @@ router.get('/', async (req: AuthRequest, res) => {
             members: new Types.ObjectId(req.userState._id)
           }
         ]
+      };
+    } else {
+      // Guest users can see all public channels except 'nyheter'
+      query = {
+        isPrivate: false,
+        name: { $ne: 'nyheter' }
       };
     }
 
@@ -268,5 +274,50 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res) => {
 
 // Get channel users
 router.get('/:id/users', requireAuth, getChannelUsers);
+
+// Join channel
+router.post('/:id/join', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const channel = await Channel.findById(req.params.id);
+    if (!channel) {
+      return res.status(404).json({ message: 'Channel not found' });
+    }
+
+    // Check if user is authenticated for private channels
+    if (channel.isPrivate) {
+      if (req.userState?.type !== 'authenticated') {
+        return res.status(403).json({ message: 'Authentication required for private channels' });
+      }
+
+      const userId = new Types.ObjectId(req.userState._id);
+      const isChannelMember = channel.members.some(id => id.equals(userId));
+
+      if (!isChannelMember) {
+        return res.status(403).json({ message: 'Access denied: You are not a member of this private channel' });
+      }
+    }
+
+    // If user is already a member, just return the channel
+    if (req.userState?.type === 'authenticated') {
+      const userId = new Types.ObjectId(req.userState._id);
+      if (channel.members.some(id => id.equals(userId))) {
+        await channel.populate('members', 'username');
+        await channel.populate('createdBy', 'username');
+        return res.json(channel);
+      }
+
+      // Add user to members if not already a member
+      channel.members.push(userId);
+    }
+
+    await channel.save();
+    await channel.populate('members', 'username');
+    await channel.populate('createdBy', 'username');
+    res.json(channel);
+  } catch (error) {
+    console.error('Error joining channel:', error);
+    res.status(500).json({ message: 'Error joining channel' });
+  }
+});
 
 export default router;
