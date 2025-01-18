@@ -18,7 +18,11 @@ app.use(express.json());
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'],
+  origin: process.env.CORS_ORIGIN?.split(',') || [
+    'http://localhost:5173',
+    'https://chappy-frontend.onrender.com',
+    'https://chappyv.onrender.com'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
@@ -28,7 +32,11 @@ app.use(cors({
 // Add headers middleware for all responses
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'];
+  const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [
+    'http://localhost:5173',
+    'https://chappy-frontend.onrender.com',
+    'https://chappyv.onrender.com'
+  ];
 
   if (origin && allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
@@ -87,7 +95,11 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Socket.IO setup
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'],
+    origin: process.env.CORS_ORIGIN?.split(',') || [
+      'http://localhost:5173',
+      'https://chappy-frontend.onrender.com',
+      'https://chappyv.onrender.com'
+    ],
     credentials: true,
     methods: ['GET', 'POST']
   }
