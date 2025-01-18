@@ -133,16 +133,19 @@ export const useStore = create<StoreState>()(
 
       checkAuth: async () => {
         try {
-          const token = localStorage.getItem('token');
+          const token = get().token;
           if (!token) {
             set({ isInitialized: true });
             return false;
           }
 
+          // Set token in axios headers
+          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
           const { data } = await api.get('/auth/me');
 
           if (!data || !data._id) {
-            // Rensa token om den är ogiltig
+            // Clear invalid token
             localStorage.removeItem('token');
             set({
               userState: null,
@@ -167,7 +170,7 @@ export const useStore = create<StoreState>()(
           return true;
         } catch (error) {
           console.error('Auth check error:', error);
-          // Rensa token vid fel
+          // Clear token on error
           localStorage.removeItem('token');
           set({
             userState: null,
@@ -578,16 +581,20 @@ export const useStore = create<StoreState>()(
         userState: state.userState,
         token: state.token,
         isInitialized: state.isInitialized,
-        guestName: state.guestName,
-        currentChannel: state.currentChannel,
-        currentConversation: state.currentConversation,
-        channels: state.channels,
-        conversations: state.conversations
+        guestName: state.guestName
       }),
       storage: {
         getItem: (name) => {
           const str = localStorage.getItem(name);
-          return str ? JSON.parse(str) : null;
+          if (!str) return null;
+          const data = JSON.parse(str);
+
+          // Restore axios auth header if token exists
+          if (data.state?.token) {
+            api.defaults.headers.common['Authorization'] = `Bearer ${data.state.token}`;
+          }
+
+          return data;
         },
         setItem: (name, value) => {
           localStorage.setItem(name, JSON.stringify(value));
