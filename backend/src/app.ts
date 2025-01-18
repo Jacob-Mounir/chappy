@@ -16,42 +16,17 @@ const httpServer = createServer(app);
 // Parse JSON bodies
 app.use(express.json());
 
-// CORS configuration
-const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [
-  'http://localhost:5173',
-  'https://chappy-frontend.onrender.com',
-  'https://chappyv.onrender.com'
-];
-
+// CORS configuration - Accept all origins
 app.use(cors({
-  origin: function(origin, callback) {
-    // allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.indexOf(origin) === -1) {
-      console.log('Blocked origin:', origin);
-      console.log('Allowed origins:', allowedOrigins);
-    }
-
-    return callback(null, true);
-  },
+  origin: true, // Allow all origins
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
-  exposedHeaders: ['Access-Control-Allow-Origin']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept']
 }));
 
 // Add headers middleware for all responses
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-
-  // Allow any origin during development
-  if (process.env.NODE_ENV === 'development') {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
-  } else if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Origin, Accept');
@@ -106,7 +81,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Socket.IO setup
 const io = new Server(httpServer, {
   cors: {
-    origin: allowedOrigins,
+    origin: '*', // Allow all origins for Socket.IO as well
     credentials: true,
     methods: ['GET', 'POST']
   }
