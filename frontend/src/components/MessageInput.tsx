@@ -6,26 +6,19 @@ import { Send } from "lucide-react";
 
 export function MessageInput() {
   const [message, setMessage] = useState("");
-  const { sendMessage, currentChannel, userState, guestName, setError } = useStore();
+  const { sendMessage, currentChannel, userState, guestName } = useStore();
+
+  const isNewsChannel = currentChannel?.name === 'nyheter';
+  const isGuest = userState?.type !== 'authenticated';
+  const isDisabled = isNewsChannel && isGuest;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || !currentChannel) return;
 
     try {
-      // Check if this is the nyheter channel and user is not authenticated
-      if (currentChannel.name === 'nyheter' && userState?.type !== 'authenticated') {
-        setError('Only authenticated users can send messages in the news channel');
-        return;
-      }
-
-      const currentGuestName = useStore.getState().guestName;
       if (userState?.type === 'guest') {
-        if (!currentGuestName) {
-          console.error('No guest name found!');
-          return;
-        }
-        await sendMessage(message.trim(), currentGuestName);
+        await sendMessage(message.trim(), guestName || '');
       } else {
         await sendMessage(message.trim());
       }
@@ -41,14 +34,14 @@ export function MessageInput() {
         <Input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type your message..."
+          placeholder={isDisabled ? "You cannot send messages in the news channel" : "Type your message..."}
           className="flex-1"
-          disabled={currentChannel?.name === 'nyheter' && userState?.type !== 'authenticated'}
+          disabled={isDisabled}
         />
         <Button
           type="submit"
           size="icon"
-          disabled={!message.trim() || (currentChannel?.name === 'nyheter' && userState?.type !== 'authenticated')}
+          disabled={!message.trim() || isDisabled}
           className="shrink-0"
         >
           <Send className="h-4 w-4" />

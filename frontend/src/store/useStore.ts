@@ -22,6 +22,7 @@ type AuthenticatedUser = {
 
 type GuestUser = {
   type: 'guest'
+  username: string
 }
 
 type UserState = AuthenticatedUser | GuestUser
@@ -250,13 +251,15 @@ export const useStore = create<StoreState>()(
       loginAsGuest: async () => {
         try {
           set({ isLoading: true, error: null });
-          console.log("Starting guest login");
-
           const { guestName } = get();
-          console.log("Current guest name:", guestName);
+
+          if (!guestName) {
+            throw new Error('Guest name is required');
+          }
 
           const guestUser: GuestUser = {
-            type: 'guest'
+            type: 'guest',
+            username: guestName
           };
 
           // Clear any existing auth
@@ -275,6 +278,10 @@ export const useStore = create<StoreState>()(
           await get().fetchChannels();
         } catch (error: any) {
           console.error('Guest login error:', error);
+          set({
+            error: error.message || 'Failed to login as guest',
+            isLoading: false
+          });
           throw error;
         }
       },
@@ -382,15 +389,20 @@ export const useStore = create<StoreState>()(
       },
 
       // Message actions
-      sendMessage: async (content, guestName) => {
+      sendMessage: async (content: string, guestName?: string) => {
         const { currentChannel, userState } = get();
         if (!currentChannel) return;
 
         try {
-          console.log('Sending message:', { content, guestName }); // Debug
+          // Simple check for nyheter channel
+          if (currentChannel.name === 'nyheter' && userState?.type !== 'authenticated') {
+            set({ error: 'Only logged in users can send messages in the news channel' });
+            throw new Error('Only logged in users can send messages in the news channel');
+          }
+
           const messageData = {
             content,
-            ...(userState?.type === 'guest' && { guestName: guestName || 'Guest' })
+            ...(userState?.type === 'guest' && { guestName })
           };
 
           const { data } = await api.post(
@@ -399,9 +411,10 @@ export const useStore = create<StoreState>()(
           );
 
           set((state) => ({
-            messages: [...state.messages, data]
+            messages: [...state.messages, data],
+            error: null
           }));
-        } catch (error) {
+        } catch (error: any) {
           console.error('Failed to send message:', error);
           throw error;
         }
