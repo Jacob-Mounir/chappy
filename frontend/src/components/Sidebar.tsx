@@ -95,7 +95,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                 channels.map((channel) => {
                   const isPrivateAndNotMember = channel.isPrivate &&
                     userState?.type === 'authenticated' &&
-                    !channel.members.includes(userState._id);
+                    !channel.members.some(memberId => memberId === userState._id);
 
                   return (
                     <Button

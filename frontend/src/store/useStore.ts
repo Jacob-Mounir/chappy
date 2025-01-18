@@ -85,6 +85,7 @@ interface StoreState {
   logout: () => void
   clearError: () => void
   checkAuth: () => Promise<boolean>
+  setError: (message: string | null) => void
 
   // Channel actions
   fetchChannels: () => Promise<void>
@@ -106,8 +107,6 @@ interface StoreState {
   setGuestName: (name: string) => void
 
   addMessage: (message: DirectMessage) => void
-
-  setError: (message: string) => void
 }
 
 // Helper function to check if user is authenticated
@@ -133,19 +132,17 @@ export const useStore = create<StoreState>()(
 
       checkAuth: async () => {
         try {
-          const token = get().token;
+          const token = localStorage.getItem('token');
           if (!token) {
             set({ isInitialized: true });
             return false;
           }
 
-          // Set token in axios headers
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
           const { data } = await api.get('/auth/me');
 
           if (!data || !data._id) {
-            delete api.defaults.headers.common['Authorization'];
+            // Rensa token om den är ogiltig
+            localStorage.removeItem('token');
             set({
               userState: null,
               token: null,
@@ -169,7 +166,8 @@ export const useStore = create<StoreState>()(
           return true;
         } catch (error) {
           console.error('Auth check error:', error);
-          delete api.defaults.headers.common['Authorization'];
+          // Rensa token vid fel
+          localStorage.removeItem('token');
           set({
             userState: null,
             token: null,
@@ -199,6 +197,9 @@ export const useStore = create<StoreState>()(
           // Update axios default headers
           api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
 
+          // Store token in localStorage
+          localStorage.setItem('token', data.token);
+
           // Update store state
           set({
             userState: authenticatedUser,
@@ -221,6 +222,8 @@ export const useStore = create<StoreState>()(
           console.error('Login error:', error);
           const errorMessage = error.response?.data?.message || error.message || 'Failed to login';
 
+          // Clear any invalid auth state
+          localStorage.removeItem('token');
           delete api.defaults.headers.common['Authorization'];
 
           set({
@@ -243,13 +246,17 @@ export const useStore = create<StoreState>()(
       loginAsGuest: async () => {
         try {
           set({ isLoading: true, error: null });
+          console.log("Starting guest login");
 
           const { guestName } = get();
+          console.log("Current guest name:", guestName);
 
           const guestUser: GuestUser = {
             type: 'guest'
           };
 
+          // Clear any existing auth
+          localStorage.removeItem('token');
           delete api.defaults.headers.common['Authorization'];
 
           // Update store state
@@ -269,8 +276,13 @@ export const useStore = create<StoreState>()(
       },
 
       logout: () => {
+        console.log('Logging out...');
+
         // Clear auth header
         delete api.defaults.headers.common['Authorization'];
+
+        // Clear localStorage
+        localStorage.removeItem('token');
 
         // Reset store state
         set({
@@ -284,47 +296,34 @@ export const useStore = create<StoreState>()(
           directMessages: [],
           conversations: [],
           isLoading: false,
-          isInitialized: true,
-          guestName: null
+          isInitialized: true
         });
+
+        console.log('Logout complete');
       },
 
       clearError: () => set({ error: null }),
-
-      setError: (message: string) => set({ error: message }),
 
       // Channel actions
       fetchChannels: async () => {
         try {
           const { data } = await api.get('/channels');
-          set({ channels: data || [], error: null });
-        } catch (error: any) {
+          set({ channels: data || [] });
+        } catch (error) {
           console.error('Failed to fetch channels:', error);
-          const errorMessage = error.response?.data?.message || 'Failed to fetch channels';
-          set({
-            channels: [],
-            error: errorMessage
-          });
+          set({ channels: [] });
         }
       },
 
       createChannel: async (channelData) => {
         try {
-          set({ isLoading: true, error: null });
           const { data } = await api.post('/channels', channelData);
           set((state) => ({
-            channels: [...state.channels, data],
-            isLoading: false,
-            error: null
+            channels: [...state.channels, data]
           }));
           return data;
-        } catch (error: any) {
+        } catch (error) {
           console.error('Failed to create channel:', error);
-          const errorMessage = error.response?.data?.message || 'Failed to create channel';
-          set({
-            error: errorMessage,
-            isLoading: false
-          });
           throw error;
         }
       },
@@ -333,10 +332,21 @@ export const useStore = create<StoreState>()(
         if (!channelId) return;
         try {
           const channel = get().channels.find(c => c._id === channelId);
+          const userState = get().userState;
 
           // Check if channel is private and user is not authenticated
-          if (channel?.isPrivate && get().userState?.type !== 'authenticated') {
+          if (channel?.isPrivate && userState?.type !== 'authenticated') {
             throw new Error('You must be logged in to join private channels');
+          }
+
+          // For private channels, check if user is a member
+          if (channel?.isPrivate && userState?.type === 'authenticated') {
+            const isMember = channel.members.some(
+              memberId => memberId === userState._id
+            );
+            if (!isMember) {
+              throw new Error('You are not a member of this private channel');
+            }
           }
 
           const { data } = await api.post(`/channels/${channelId}/join`);
@@ -476,6 +486,8 @@ export const useStore = create<StoreState>()(
             directMessages: []
           });
 
+          // Store token in localStorage
+          localStorage.setItem('token', data.token);
           console.log('Registration successful, user state updated');
 
           // Fetch initial data
@@ -486,9 +498,6 @@ export const useStore = create<StoreState>()(
           const apiError = error as ApiError;
           const errorMessage = apiError.response?.data?.message || apiError.message;
           console.error('Registration error:', errorMessage);
-
-          // Clear auth header
-          delete api.defaults.headers.common['Authorization'];
 
           set({
             error: errorMessage,
@@ -565,6 +574,10 @@ export const useStore = create<StoreState>()(
             conversations: updatedConversations
           };
         });
+      },
+
+      setError: (message) => {
+        set({ error: message });
       }
     }),
     {
@@ -573,20 +586,16 @@ export const useStore = create<StoreState>()(
         userState: state.userState,
         token: state.token,
         isInitialized: state.isInitialized,
-        guestName: state.guestName
+        guestName: state.guestName,
+        currentChannel: state.currentChannel,
+        currentConversation: state.currentConversation,
+        channels: state.channels,
+        conversations: state.conversations
       }),
       storage: {
         getItem: (name) => {
           const str = localStorage.getItem(name);
-          if (!str) return null;
-          const data = JSON.parse(str);
-
-          // Restore axios auth header if token exists
-          if (data.state?.token) {
-            api.defaults.headers.common['Authorization'] = `Bearer ${data.state.token}`;
-          }
-
-          return data;
+          return str ? JSON.parse(str) : null;
         },
         setItem: (name, value) => {
           localStorage.setItem(name, JSON.stringify(value));
