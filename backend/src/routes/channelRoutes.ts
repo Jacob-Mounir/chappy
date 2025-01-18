@@ -32,21 +32,24 @@ router.get('/', async (req: AuthRequest, res) => {
       };
     }
 
-    console.log('Channel query:', query);
-
     const channels = await Channel.find(query)
       .populate('members', 'username')
       .populate('createdBy', 'username')
       .sort({ createdAt: -1 });
 
-    // Debug logging
-    console.log('Channels being sent:', channels.map(ch => ({
-      name: ch.name,
-      isPrivate: ch.isPrivate,
-      memberCount: ch.members.length
-    })));
+    // Format channels for response
+    const formattedChannels = channels.map(channel => ({
+      _id: channel._id,
+      name: channel.name,
+      description: channel.description,
+      isPrivate: channel.isPrivate,
+      createdBy: channel.createdBy,
+      members: channel.members.map(member => member._id),
+      createdAt: channel.createdAt,
+      updatedAt: channel.updatedAt
+    }));
 
-    res.json(channels);
+    res.json(formattedChannels);
   } catch (error) {
     console.error('Error fetching channels:', error);
     res.status(500).json({ message: 'Error fetching channels' });

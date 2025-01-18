@@ -308,7 +308,12 @@ export const useStore = create<StoreState>()(
       fetchChannels: async () => {
         try {
           const { data } = await api.get('/channels');
-          set({ channels: data || [] });
+          // Ensure we have the member information for private channels
+          const channelsWithMembers = data.map((channel: any) => ({
+            ...channel,
+            members: channel.members || []
+          }));
+          set({ channels: channelsWithMembers || [] });
         } catch (error) {
           console.error('Failed to fetch channels:', error);
           set({ channels: [] });
