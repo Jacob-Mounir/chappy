@@ -47,6 +47,19 @@ export const seedData = async () => {
       console.log('Private channel created successfully');
     }
 
+    // Skapa #nyheter kanalen om den inte finns
+    const newsChannel = await Channel.findOne({ name: 'nyheter' });
+    if (!newsChannel) {
+      await Channel.create({
+        name: 'nyheter',
+        description: 'Nyhetskanal - endast för registrerade användare',
+        isPrivate: true,
+        members: [adminUser._id, testUser._id],
+        createdBy: adminUser._id
+      });
+      console.log('#nyheter channel created successfully');
+    }
+
     console.log('Seed data created successfully');
   } catch (error) {
     console.error('Error seeding data:', error);

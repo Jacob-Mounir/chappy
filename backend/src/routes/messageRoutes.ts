@@ -16,6 +16,18 @@ router.get('/channel/:channelId', requireAuth, async (req: AuthRequest, res) => 
       return res.status(404).json({ message: 'Channel not found' });
     }
 
+    // For private channels, user must be authenticated and a member
+    if (channel.isPrivate) {
+      if (req.userState?.type !== 'authenticated') {
+        return res.status(403).json({ message: 'Authentication required for private channels' });
+      }
+
+      const userId = getAuthenticatedUserId(req.userState);
+      if (!channel.members.some(id => id.equals(userId))) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+    }
+
     // Hämta alla meddelanden för kanalen
     const messages = await Message.find({
       channel: req.params.channelId
@@ -40,7 +52,6 @@ router.get('/channel/:channelId', requireAuth, async (req: AuthRequest, res) => 
       };
     });
 
-    console.log('Messages:', formattedMessages);
     res.json(formattedMessages);
   } catch (error) {
     console.error('Error details:', error);
@@ -53,34 +64,51 @@ router.post('/channel/:channelId', requireAuth, async (req: AuthRequest, res) =>
   try {
     const { channelId } = req.params;
     const { content, guestName } = req.body;
-    console.log('Processing message:', { channelId, content, guestName });
 
     const channel = await Channel.findById(channelId);
     if (!channel) {
       return res.status(404).json({ message: 'Channel not found' });
     }
 
-    // Allow guest messages in public channels
+    // For private channels, user must be authenticated and a member
     if (channel.isPrivate) {
-      if (!req.userState || !isAuthenticated(req.userState)) {
-        return res.status(401).json({ message: 'Authentication required for private channels' });
+      if (req.userState?.type !== 'authenticated') {
+        return res.status(403).json({ message: 'Authentication required for private channels' });
       }
+
+      const userId = getAuthenticatedUserId(req.userState);
+      if (!channel.members.some(id => id.equals(userId))) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      // Create message for authenticated user
+      const message = new Message({
+        content: content.trim(),
+        channel: channelId,
+        sender: {
+          _id: req.userState._id,
+          username: req.userState.username,
+          type: 'authenticated'
+        }
+      });
+
+      await message.save();
+      return res.status(201).json(message);
     }
 
+    // For public channels, allow both authenticated users and guests
     let message;
-    if (req.userState && isAuthenticated(req.userState)) {
-      // För inloggade användare
+    if (req.userState?.type === 'authenticated') {
       message = new Message({
         content: content.trim(),
         channel: channelId,
         sender: {
           _id: req.userState._id,
           username: req.userState.username,
-          type: 'user'
+          type: 'authenticated'
         }
       });
     } else {
-      // För gäster
       message = new Message({
         content: content.trim(),
         channel: channelId,
@@ -92,7 +120,6 @@ router.post('/channel/:channelId', requireAuth, async (req: AuthRequest, res) =>
     }
 
     await message.save();
-    console.log('Message saved:', message);
     res.status(201).json(message);
   } catch (error) {
     console.error('Error sending message:', error);

@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import { connectDB } from './config/db';
 import routes from './routes';
 import cors from 'cors';
-import mongoose from 'mongoose';
 import { seedData } from './config/seed';
 import { AuthRequest } from './types/express';
 import { Server } from 'socket.io';
@@ -12,13 +11,14 @@ import { createServer } from 'http';
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
 
 // Parse JSON bodies
 app.use(express.json());
 
 // CORS configuration
 app.use(cors({
-  origin: 'https://chappy-frontend.onrender.com',
+  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
@@ -28,7 +28,9 @@ app.use(cors({
 // Add headers middleware for all responses
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin === 'https://chappy-frontend.onrender.com') {
+  const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'];
+
+  if (origin && allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -42,16 +44,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Request logging middleware (AFTER body parsing)
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`, {
-    body: req.body,
-    query: req.query,
-    headers: req.headers
-  });
-  next();
-});
-
 // Request logging middleware
 app.use((req: AuthRequest, res, next) => {
   console.log('Incoming request:', {
@@ -59,7 +51,7 @@ app.use((req: AuthRequest, res, next) => {
     path: req.path,
     body: req.body,
     headers: req.headers,
-    userState: req.userState // Nu ska TypeScript vara nöjd
+    userState: req.userState
   });
   next();
 });
@@ -69,10 +61,10 @@ app.get('/health', (_, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
-// Mount routes directly (no /api prefix)
+// Mount routes
 app.use(routes);
 
-// 404 handler - must be before error handler
+// 404 handler
 app.use((req, res) => {
   console.log('404 Not Found:', req.method, req.path);
   res.status(404).json({ message: 'Not Found' });
@@ -92,29 +84,22 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-const httpServer = createServer(app);
+// Socket.IO setup
 const io = new Server(httpServer, {
   cors: {
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'https://chappy-frontend.onrender.com',
-      'https://chappyv.onrender.com'
-    ],
+    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'],
     credentials: true,
     methods: ['GET', 'POST']
   }
 });
 
-// Hantera Socket.IO anslutningar
+// Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  // Håll reda på vilka rum socketen är ansluten till
   const joinedRooms = new Set<string>();
 
   socket.on('join_conversation', (conversationId) => {
-    // Gå med i rummet endast om vi inte redan är med
     if (!joinedRooms.has(conversationId)) {
       socket.join(conversationId);
       joinedRooms.add(conversationId);
@@ -124,12 +109,7 @@ io.on('connection', (socket) => {
 
   socket.on('send_message', async (data) => {
     const { conversationId, message } = data;
-
     try {
-      // Spara meddelandet i databasen
-      // ... din existerande logik för att spara meddelanden ...
-
-      // Skicka meddelandet till alla ANDRA i konversationen
       socket.to(conversationId).emit('receive_message', message);
     } catch (error) {
       console.error('Error handling message:', error);
@@ -142,27 +122,13 @@ io.on('connection', (socket) => {
   });
 });
 
-const startServer = async () => {
-  try {
-    await connectDB();
-    await seedData();
+// Initialize database connection
+connectDB().then(async () => {
+  console.log('Connected to MongoDB');
+  await seedData();
+}).catch(err => {
+  console.error('MongoDB connection error:', err);
+});
 
-    if (mongoose.connection.readyState === 1) {
-      const PORT = process.env.PORT || 5001;
-      httpServer.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-        console.log(`MongoDB connected: ${mongoose.connection.host}`);
-      });
-    } else {
-      console.error('Failed to connect to MongoDB. Server not started.');
-      process.exit(1);
-    }
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-};
-
-startServer();
-
+export { app, httpServer };
 export default app;
