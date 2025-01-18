@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { Button } from '../components/ui/button';
@@ -10,7 +10,7 @@ import { ArrowLeft } from 'lucide-react';
 
 export function CreateChannel() {
   const navigate = useNavigate();
-  const { createChannel } = useStore();
+  const { createChannel, userState, fetchChannels } = useStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -18,20 +18,34 @@ export function CreateChannel() {
     isPrivate: false,
   });
 
+  // Check authentication
+  useEffect(() => {
+    if (!userState || userState.type !== 'authenticated') {
+      navigate('/chat');
+    }
+  }, [userState, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.name.trim()) return;
+
     setIsLoading(true);
     setError(null);
 
     try {
       await createChannel(formData);
+      await fetchChannels(); // Refresh the channels list
       navigate('/chat');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create channel');
-    } finally {
       setIsLoading(false);
     }
   };
+
+  // If not authenticated, don't render anything
+  if (!userState || userState.type !== 'authenticated') {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
@@ -63,6 +77,7 @@ export function CreateChannel() {
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Enter channel name"
               required
+              disabled={isLoading}
             />
           </div>
 
@@ -73,13 +88,14 @@ export function CreateChannel() {
               onCheckedChange={(checked) =>
                 setFormData({ ...formData, isPrivate: checked as boolean })
               }
+              disabled={isLoading}
             />
             <Label htmlFor="isPrivate" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
               Make this channel private
             </Label>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button type="submit" className="w-full" disabled={isLoading || !formData.name.trim()}>
             {isLoading ? 'Creating...' : 'Create Channel'}
           </Button>
         </form>

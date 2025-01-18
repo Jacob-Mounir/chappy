@@ -145,8 +145,7 @@ export const useStore = create<StoreState>()(
           const { data } = await api.get('/auth/me');
 
           if (!data || !data._id) {
-            // Clear invalid token
-            localStorage.removeItem('token');
+            delete api.defaults.headers.common['Authorization'];
             set({
               userState: null,
               token: null,
@@ -170,8 +169,7 @@ export const useStore = create<StoreState>()(
           return true;
         } catch (error) {
           console.error('Auth check error:', error);
-          // Clear token on error
-          localStorage.removeItem('token');
+          delete api.defaults.headers.common['Authorization'];
           set({
             userState: null,
             token: null,
@@ -201,9 +199,6 @@ export const useStore = create<StoreState>()(
           // Update axios default headers
           api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
 
-          // Store token in localStorage
-          localStorage.setItem('token', data.token);
-
           // Update store state
           set({
             userState: authenticatedUser,
@@ -226,8 +221,6 @@ export const useStore = create<StoreState>()(
           console.error('Login error:', error);
           const errorMessage = error.response?.data?.message || error.message || 'Failed to login';
 
-          // Clear any invalid auth state
-          localStorage.removeItem('token');
           delete api.defaults.headers.common['Authorization'];
 
           set({
@@ -250,17 +243,13 @@ export const useStore = create<StoreState>()(
       loginAsGuest: async () => {
         try {
           set({ isLoading: true, error: null });
-          console.log("Starting guest login");
 
           const { guestName } = get();
-          console.log("Current guest name:", guestName);
 
           const guestUser: GuestUser = {
             type: 'guest'
           };
 
-          // Clear any existing auth
-          localStorage.removeItem('token');
           delete api.defaults.headers.common['Authorization'];
 
           // Update store state
@@ -280,13 +269,8 @@ export const useStore = create<StoreState>()(
       },
 
       logout: () => {
-        console.log('Logging out...');
-
         // Clear auth header
         delete api.defaults.headers.common['Authorization'];
-
-        // Clear localStorage
-        localStorage.removeItem('token');
 
         // Reset store state
         set({
@@ -300,10 +284,9 @@ export const useStore = create<StoreState>()(
           directMessages: [],
           conversations: [],
           isLoading: false,
-          isInitialized: true
+          isInitialized: true,
+          guestName: null
         });
-
-        console.log('Logout complete');
       },
 
       clearError: () => set({ error: null }),
@@ -327,13 +310,21 @@ export const useStore = create<StoreState>()(
 
       createChannel: async (channelData) => {
         try {
+          set({ isLoading: true, error: null });
           const { data } = await api.post('/channels', channelData);
           set((state) => ({
-            channels: [...state.channels, data]
+            channels: [...state.channels, data],
+            isLoading: false,
+            error: null
           }));
           return data;
-        } catch (error) {
+        } catch (error: any) {
           console.error('Failed to create channel:', error);
+          const errorMessage = error.response?.data?.message || 'Failed to create channel';
+          set({
+            error: errorMessage,
+            isLoading: false
+          });
           throw error;
         }
       },
@@ -485,8 +476,6 @@ export const useStore = create<StoreState>()(
             directMessages: []
           });
 
-          // Store token in localStorage
-          localStorage.setItem('token', data.token);
           console.log('Registration successful, user state updated');
 
           // Fetch initial data
@@ -497,6 +486,9 @@ export const useStore = create<StoreState>()(
           const apiError = error as ApiError;
           const errorMessage = apiError.response?.data?.message || apiError.message;
           console.error('Registration error:', errorMessage);
+
+          // Clear auth header
+          delete api.defaults.headers.common['Authorization'];
 
           set({
             error: errorMessage,
