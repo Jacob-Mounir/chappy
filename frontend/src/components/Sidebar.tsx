@@ -104,7 +104,6 @@ export function Sidebar({ onClose }: SidebarProps) {
                       className="w-full justify-start gap-2"
                       onClick={() => {
                         if (channel.isPrivate && userState?.type !== 'authenticated') {
-                          // Show error in store state instead of alert
                           setError('You must be logged in to join private channels');
                           return;
                         }
@@ -117,7 +116,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                       }}
                     >
                       {channel.isPrivate ? (
-                        <Lock className="h-4 w-4 text-blue-500" />
+                        <Lock className="h-4 w-4 text-muted-foreground" />
                       ) : (
                         <Hash className="h-4 w-4" />
                       )}

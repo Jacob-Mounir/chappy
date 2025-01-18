@@ -4,6 +4,7 @@ import { Channel } from '../models/Channel';
 import { validate } from '../middleware/validate';
 import { schemas } from '../validation/schemas';
 import { Types } from 'mongoose';
+import { getChannelUsers } from '../controllers/channelController';
 
 const router = Router();
 
@@ -264,5 +265,8 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res) => {
     res.status(500).json({ message: 'Error deleting channel' });
   }
 });
+
+// Get channel users
+router.get('/:id/users', requireAuth, getChannelUsers);
 
 export default router;
