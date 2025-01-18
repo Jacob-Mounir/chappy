@@ -70,9 +70,14 @@ router.post('/channel/:channelId', requireAuth, async (req: AuthRequest, res) =>
       return res.status(404).json({ message: 'Channel not found' });
     }
 
-    // Check if this is the "nyheter" channel
-    if (channel.name === 'nyheter' && req.userState?.type !== 'authenticated') {
-      return res.status(403).json({ message: 'Only authenticated users can send messages in the news channel' });
+    // Block guest messages in nyheter channel
+    if (channel.name === 'nyheter') {
+      if (req.userState?.type !== 'authenticated') {
+        return res.status(403).json({
+          message: 'Only authenticated users can send messages in the news channel',
+          isRestricted: true
+        });
+      }
     }
 
     // For private channels, user must be authenticated and a member
@@ -85,23 +90,9 @@ router.post('/channel/:channelId', requireAuth, async (req: AuthRequest, res) =>
       if (!channel.members.some(id => id.equals(userId))) {
         return res.status(403).json({ message: 'Access denied' });
       }
-
-      // Create message for authenticated user
-      const message = new Message({
-        content: content.trim(),
-        channel: channelId,
-        sender: {
-          _id: req.userState._id,
-          username: req.userState.username,
-          type: 'authenticated'
-        }
-      });
-
-      await message.save();
-      return res.status(201).json(message);
     }
 
-    // For public channels, allow both authenticated users and guests
+    // Create message based on user type
     let message;
     if (req.userState?.type === 'authenticated') {
       message = new Message({

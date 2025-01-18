@@ -327,6 +327,7 @@ export const useStore = create<StoreState>()(
           const { data } = await api.get('/channels');
           const channelsWithMembers = data.map((channel: any) => ({
             ...channel,
+            isRestricted: channel.name === 'nyheter',
             members: channel.members || []
           }));
           set({ channels: channelsWithMembers || [], error: null });
@@ -403,9 +404,9 @@ export const useStore = create<StoreState>()(
 
         try {
           // Block guest messages in nyheter channel immediately
-          if (currentChannel.name.toLowerCase() === 'nyheter' && userState?.type !== 'authenticated') {
+          if (currentChannel.name === 'nyheter' && userState?.type !== 'authenticated') {
             set({ error: 'Only logged in users can send messages in the news channel' });
-            return; // Return early without trying to send
+            return;
           }
 
           const messageData = {
@@ -424,7 +425,11 @@ export const useStore = create<StoreState>()(
           }));
         } catch (error: any) {
           console.error('Failed to send message:', error);
-          set({ error: error.message || 'Failed to send message' });
+          if (error.response?.data?.isRestricted) {
+            set({ error: 'This channel is restricted to authenticated users only' });
+          } else {
+            set({ error: error.message || 'Failed to send message' });
+          }
         }
       },
 
