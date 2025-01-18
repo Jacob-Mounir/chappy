@@ -25,10 +25,19 @@ router.get('/', async (req: AuthRequest, res) => {
       };
     }
 
+    console.log('Channel query:', query);
+
     const channels = await Channel.find(query)
       .populate('members', 'username')
       .populate('createdBy', 'username')
       .sort({ createdAt: -1 });
+
+    // Debug logging
+    console.log('Channels being sent:', channels.map(ch => ({
+      name: ch.name,
+      isPrivate: ch.isPrivate,
+      memberCount: ch.members.length
+    })));
 
     res.json(channels);
   } catch (error) {

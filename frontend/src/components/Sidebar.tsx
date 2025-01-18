@@ -40,6 +40,9 @@ export function Sidebar({ onClose }: SidebarProps) {
     loadData();
   }, [fetchChannels, fetchConversations, isAuthenticated]);
 
+  // Debug logging
+  console.log('Channels:', channels);
+
   return (
     <aside className="w-full h-full border-r bg-background flex flex-col">
       <div className="p-4 border-b flex justify-between items-center">
@@ -88,24 +91,32 @@ export function Sidebar({ onClose }: SidebarProps) {
               ) : channels.length === 0 ? (
                 <div className="text-sm text-muted-foreground p-2">No channels yet</div>
               ) : (
-                channels.map((channel) => (
-                  <Button
-                    key={channel._id}
-                    variant={currentChannel?._id === channel._id ? "secondary" : "ghost"}
-                    className="w-full justify-start gap-2"
-                    onClick={() => {
-                      joinChannel(channel._id);
-                      onClose?.();
-                    }}
-                  >
-                    {channel.isPrivate ? (
-                      <Lock className="h-4 w-4" />
-                    ) : (
-                      <Hash className="h-4 w-4" />
-                    )}
-                    {channel.name}
-                  </Button>
-                ))
+                channels.map((channel) => {
+                  // Debug logging for each channel
+                  console.log(`Channel ${channel.name}:`, { isPrivate: channel.isPrivate });
+
+                  return (
+                    <Button
+                      key={channel._id}
+                      variant={currentChannel?._id === channel._id ? "secondary" : "ghost"}
+                      className="w-full justify-start gap-2"
+                      onClick={() => {
+                        joinChannel(channel._id);
+                        onClose?.();
+                      }}
+                    >
+                      {channel.isPrivate ? (
+                        <Lock className="h-4 w-4 text-blue-500" />
+                      ) : (
+                        <Hash className="h-4 w-4" />
+                      )}
+                      <span className="flex items-center gap-2">
+                        {channel.name}
+                        {channel.isPrivate && <span className="text-xs text-muted-foreground">(Private)</span>}
+                      </span>
+                    </Button>
+                  );
+                })
               )}
             </div>
           </div>
