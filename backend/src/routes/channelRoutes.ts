@@ -1,24 +1,34 @@
 import { Router } from 'express';
-import { requireAuth, AuthRequest, isAuthenticated, getAuthenticatedUserId } from '../middleware/auth';
+import { requireAuth, AuthRequest } from '../middleware/auth';
 import { Channel } from '../models/Channel';
 import { validate } from '../middleware/validate';
 import { schemas } from '../validation/schemas';
-import mongoose, { Types } from 'mongoose';
+import { Types } from 'mongoose';
 
 const router = Router();
 
-// Get all channels
+// Get all channels (public ones and private ones where user is a member)
 router.get('/', async (req: AuthRequest, res) => {
   try {
-    const channels = await Channel.find({
-      $or: [
-        { isPrivate: false },
-        {
-          isPrivate: true,
-          members: req.userState?.type === 'authenticated' ? req.userState._id : { $exists: false }
-        }
-      ]
-    });
+    let query: any = { isPrivate: false };
+
+    // If user is authenticated, also include private channels they're a member of
+    if (req.userState?.type === 'authenticated') {
+      query = {
+        $or: [
+          { isPrivate: false },
+          {
+            isPrivate: true,
+            members: new Types.ObjectId(req.userState._id)
+          }
+        ]
+      };
+    }
+
+    const channels = await Channel.find(query)
+      .populate('members', 'username')
+      .populate('createdBy', 'username')
+      .sort({ createdAt: -1 });
 
     res.json(channels);
   } catch (error) {
@@ -36,6 +46,12 @@ router.post('/', requireAuth, validate(schemas.channel.create), async (req: Auth
       return res.status(403).json({ message: 'Only authenticated users can create channels' });
     }
 
+    // Check if channel name already exists
+    const existingChannel = await Channel.findOne({ name: name.trim() });
+    if (existingChannel) {
+      return res.status(400).json({ message: 'Channel name already exists' });
+    }
+
     const channel = new Channel({
       name: name.trim(),
       description: description?.trim(),
@@ -45,6 +61,9 @@ router.post('/', requireAuth, validate(schemas.channel.create), async (req: Auth
     });
 
     await channel.save();
+
+    // Populate creator info before sending response
+    await channel.populate('createdBy', 'username');
     res.status(201).json(channel);
   } catch (error) {
     console.error('Error creating channel:', error);
@@ -55,7 +74,10 @@ router.post('/', requireAuth, validate(schemas.channel.create), async (req: Auth
 // Get channel by ID
 router.get('/:id', async (req: AuthRequest, res) => {
   try {
-    const channel = await Channel.findById(req.params.id);
+    const channel = await Channel.findById(req.params.id)
+      .populate('members', 'username')
+      .populate('createdBy', 'username');
+
     if (!channel) {
       return res.status(404).json({ message: 'Channel not found' });
     }
@@ -66,9 +88,14 @@ router.get('/:id', async (req: AuthRequest, res) => {
         return res.status(403).json({ message: 'Authentication required for private channels' });
       }
 
-      const userId = getAuthenticatedUserId(req.userState);
-      if (!channel.members.some(id => id.equals(userId))) {
-        return res.status(403).json({ message: 'Access denied' });
+      // Now TypeScript knows req.userState is authenticated and has _id
+      const userId = new Types.ObjectId(req.userState._id);
+      const isChannelMember = channel.members.some(member =>
+        member._id.equals(userId)
+      );
+
+      if (!isChannelMember) {
+        return res.status(403).json({ message: 'Access denied: You are not a member of this channel' });
       }
     }
 
@@ -88,12 +115,24 @@ router.put('/:id', requireAuth, validate(schemas.channel.create), async (req: Au
     }
 
     // Only creator can update channel
-    if (req.userState?.type !== 'authenticated' ||
-        !channel.createdBy.equals(new Types.ObjectId(req.userState._id))) {
+    if (req.userState?.type !== 'authenticated') {
+      return res.status(403).json({ message: 'Only channel creator can update channel' });
+    }
+
+    const userId = new Types.ObjectId(req.userState._id);
+    if (!channel.createdBy.equals(userId)) {
       return res.status(403).json({ message: 'Only channel creator can update channel' });
     }
 
     const { name, description, isPrivate } = req.body;
+
+    // Check if new name already exists (if name is being changed)
+    if (name !== channel.name) {
+      const existingChannel = await Channel.findOne({ name: name.trim() });
+      if (existingChannel) {
+        return res.status(400).json({ message: 'Channel name already exists' });
+      }
+    }
 
     channel.name = name.trim();
     if (description !== undefined) {
@@ -104,6 +143,8 @@ router.put('/:id', requireAuth, validate(schemas.channel.create), async (req: Au
     }
 
     await channel.save();
+    await channel.populate('createdBy', 'username');
+    await channel.populate('members', 'username');
     res.json(channel);
   } catch (error) {
     console.error('Error updating channel:', error);
@@ -125,9 +166,15 @@ router.post('/:id/members', requireAuth, async (req: AuthRequest, res) => {
     }
 
     // Only creator can add members to private channels
-    if (channel.isPrivate && req.userState?.type === 'authenticated' &&
-        !channel.createdBy.equals(new Types.ObjectId(req.userState._id))) {
-      return res.status(403).json({ message: 'Only channel creator can add members' });
+    if (channel.isPrivate) {
+      if (req.userState?.type !== 'authenticated') {
+        return res.status(403).json({ message: 'Only channel creator can add members to private channels' });
+      }
+
+      const creatorId = new Types.ObjectId(req.userState._id);
+      if (!channel.createdBy.equals(creatorId)) {
+        return res.status(403).json({ message: 'Only channel creator can add members to private channels' });
+      }
     }
 
     // Check if user is already a member
@@ -138,6 +185,8 @@ router.post('/:id/members', requireAuth, async (req: AuthRequest, res) => {
 
     channel.members.push(memberObjectId);
     await channel.save();
+    await channel.populate('members', 'username');
+    await channel.populate('createdBy', 'username');
     res.json(channel);
   } catch (error) {
     console.error('Error adding member:', error);
@@ -153,13 +202,16 @@ router.delete('/:id/members/:userId', requireAuth, async (req: AuthRequest, res)
       return res.status(404).json({ message: 'Channel not found' });
     }
 
+    if (req.userState?.type !== 'authenticated') {
+      return res.status(403).json({ message: 'Authentication required' });
+    }
+
     const { userId } = req.params;
     const userObjectId = new Types.ObjectId(userId);
+    const currentUserId = new Types.ObjectId(req.userState._id);
 
     // Only creator can remove members, or users can remove themselves
-    if (req.userState?.type !== 'authenticated' ||
-        (!channel.createdBy.equals(new Types.ObjectId(req.userState._id)) &&
-         !new Types.ObjectId(req.userState._id).equals(userObjectId))) {
+    if (!channel.createdBy.equals(currentUserId) && !currentUserId.equals(userObjectId)) {
       return res.status(403).json({ message: 'Unauthorized to remove member' });
     }
 
@@ -170,6 +222,8 @@ router.delete('/:id/members/:userId', requireAuth, async (req: AuthRequest, res)
 
     channel.members = channel.members.filter(id => !id.equals(userObjectId));
     await channel.save();
+    await channel.populate('members', 'username');
+    await channel.populate('createdBy', 'username');
     res.json(channel);
   } catch (error) {
     console.error('Error removing member:', error);
@@ -185,9 +239,12 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res) => {
       return res.status(404).json({ message: 'Channel not found' });
     }
 
-    // Only creator can delete channel
-    if (req.userState?.type !== 'authenticated' ||
-        !channel.createdBy.equals(new Types.ObjectId(req.userState._id))) {
+    if (req.userState?.type !== 'authenticated') {
+      return res.status(403).json({ message: 'Only channel creator can delete channel' });
+    }
+
+    const userId = new Types.ObjectId(req.userState._id);
+    if (!channel.createdBy.equals(userId)) {
       return res.status(403).json({ message: 'Only channel creator can delete channel' });
     }
 
