@@ -1,9 +1,10 @@
-import { Router } from 'express';
-import * as userController from '../controllers/userController';
-import { auth } from '../middleware/auth';
+import express from 'express';
+import { getUsers, getOnlineUsers } from '../controllers/userController';
+import { isAuthenticated } from '../middleware/auth';
 
-const router = Router();
+const router = express.Router();
 
-router.get('/', auth, userController.getAllUsers);
+router.get('/', isAuthenticated, getUsers);
+router.get('/online', isAuthenticated, getOnlineUsers);
 
-export default router;
+export default router; 

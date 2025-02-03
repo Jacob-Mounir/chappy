@@ -1,10 +1,8 @@
 import express from 'express';
-import authRoutes from './auth';
+import authRoutes from './authRoutes';
 import channelRoutes from './channelRoutes';
 import messageRoutes from './messageRoutes';
-import userRoutes from './userRoutes';
-import dmRoutes from './directMessageRoutes';
-import conversationRoutes from './conversationRoutes';
+import directMessageRoutes from './directMessageRoutes';
 import { getUsers } from '../controllers/userController';
 import { requireAuth } from '../middleware/auth';
 
@@ -25,18 +23,9 @@ router.use('/channels', channelRoutes);
 router.use('/messages', messageRoutes);
 
 // Direct message routes
-router.use('/dm', dmRoutes);
+router.use('/dm', directMessageRoutes);
 
 // User routes
 router.get('/users', requireAuth, getUsers);
 
 export default router;
-
-export {
-  authRoutes,
-  channelRoutes,
-  messageRoutes,
-  userRoutes,
-  dmRoutes,
-  conversationRoutes
-};

@@ -6,14 +6,12 @@ import { createServer } from 'http';
 import { WebSocketService } from './services/WebSocketService';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
-import {
-  authRoutes,
-  channelRoutes,
-  messageRoutes,
-  userRoutes,
-  dmRoutes,
-  conversationRoutes
-} from './routes';
+import authRoutes from './routes/auth';
+import channelRoutes from './routes/channels';
+import messageRoutes from './routes/messages';
+import userRoutes from './routes/userRoutes';
+import dmRoutes from './routes/directMessages';
+import conversationRoutes from './routes/conversationRoutes';
 import mongoose from 'mongoose';
 import { Request, Response } from 'express';
 import { User } from './models/User';
