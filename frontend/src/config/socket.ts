@@ -2,7 +2,7 @@ import { io, Socket } from 'socket.io-client';
 import type { ClientToServerEvents, ServerToClientEvents } from '../types/socket';
 
 export const createSocket = (token: string): Socket<ServerToClientEvents, ClientToServerEvents> => {
-  return io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001', {
+  return io(import.meta.env.VITE_SOCKET_URL, {
     auth: { token },
     transports: ['websocket'],
     autoConnect: true,

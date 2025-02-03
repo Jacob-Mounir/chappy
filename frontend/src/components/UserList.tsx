@@ -26,7 +26,7 @@ export function MemberList({ members, showDirectMessageButton }: MemberListProps
       // Check if there's an existing conversation
       const response = await api.get(`/api/conversations/${userId}`);
       const conversation = response.data;
-      
+
       if (conversation) {
         // If conversation exists, navigate to it
         navigate(`/messages/${userId}`);
@@ -35,7 +35,7 @@ export function MemberList({ members, showDirectMessageButton }: MemberListProps
         const newConversation = await api.post('/api/conversations', {
           recipientId: userId
         });
-        
+
         navigate(`/messages/${userId}`);
       }
     } catch (error) {
@@ -53,7 +53,7 @@ export function MemberList({ members, showDirectMessageButton }: MemberListProps
     <ul className="p-3 space-y-2">
       {members.map((member, index) => {
         // Don't show DM button for the current user
-        const isCurrentUser = userState?.type === 'authenticated' && 
+        const isCurrentUser = userState?.type === 'authenticated' &&
           userState._id === member._id;
 
         return (
@@ -66,7 +66,7 @@ export function MemberList({ members, showDirectMessageButton }: MemberListProps
                 {getInitial(member.username)}
               </AvatarFallback>
             </Avatar>
-            
+
             <div className="flex-1 min-w-0">
               <div className="font-medium text-gray-200">
                 {member.username || 'Unknown User'}
