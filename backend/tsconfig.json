@@ -14,15 +14,13 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "baseUrl": ".",
+    "typeRoots": ["./src/types", "./node_modules/@types"],
     "paths": {
-      "*": ["node_modules/*"]
+      "*": ["node_modules/*", "src/types/*"]
     },
     "allowJs": true,
     "checkJs": false,
-    "noEmitOnError": false,
-    "ignoreDeprecations": "5.0",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "noEmitOnError": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
