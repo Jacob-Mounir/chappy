@@ -20,9 +20,9 @@
     "allowJs": true,
     "checkJs": false,
     "noEmitOnError": false,
-    "suppressImplicitAnyIndexErrors": true,
     "ignoreDeprecations": "5.0",
-    "suppressExcessPropertyErrors": true
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
