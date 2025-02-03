@@ -34,7 +34,7 @@
     "@types/node": "^20.11.24",
     "nodemon": "^3.0.1",
     "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0",
+    "ts-node-dev": "^2.0.0"
 
   }
 }
