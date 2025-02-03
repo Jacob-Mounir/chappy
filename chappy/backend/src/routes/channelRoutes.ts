@@ -1,1 +1,0 @@
-router.get('/:channelId/users', auth, channelController.getChannelUsers); 
