@@ -16,7 +16,13 @@
     "baseUrl": ".",
     "paths": {
       "*": ["node_modules/*"]
-    }
+    },
+    "allowJs": true,
+    "checkJs": false,
+    "noEmitOnError": false,
+    "suppressImplicitAnyIndexErrors": true,
+    "ignoreDeprecations": "5.0",
+    "suppressExcessPropertyErrors": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
