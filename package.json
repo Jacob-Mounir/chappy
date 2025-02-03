@@ -34,9 +34,6 @@
     "axios": "^1.7.9",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "sonner": "^1.7.2",
-      "@types/node": "^20.11.24",
-    "typescript": "^5.3.3",
-    "ts-node": "^10.9.2"
+    "sonner": "^1.7.2"
   }
 }
