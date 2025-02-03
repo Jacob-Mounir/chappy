@@ -26,7 +26,6 @@ dist-ssr
 # Environment files
 .env
 .env.local
+.env.development
 .env.development.local
-.env.test.local
-# Keep production env for deployment
-#.env.production
+# Do NOT ignore .env.production
