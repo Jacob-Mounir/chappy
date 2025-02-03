@@ -5,8 +5,8 @@ services:
     runtime: node
     plan: free
     rootDirectory: backend
-     buildCommand: cd backend && npm ci --production && npm i typescript --no-save && npm run build
-    startCommand: cd backend && npm start
+     buildCommand: cd backend && npm ci --production && npm i typescript --no-save && npm run build && cd dist && npm ci --production
+    startCommand: cd backend/dist && node index.js
     envVars:
       - key: NODE_ENV
         value: production
@@ -23,7 +23,7 @@ services:
   - type: static
     name: chappy-frontend
     rootDirectory: frontend
-    buildCommand: cd frontend && npm ci && npm run build
+    buildCommand: cd backend && npm ci --production && npm i typescript --no-save && npm run build
     staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_URL
