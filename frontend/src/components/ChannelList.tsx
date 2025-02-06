@@ -58,9 +58,8 @@ export default function ChannelList() {
   }, [socket, token]);
 
   const handleChannelClick = (channel) => {
-    console.log("Channel:", channel);
     setCurrentChannel(channel);
-    navigate(`/channels/${channel}`);
+    navigate(`/channels/${channel._id}`);
   };
 
   if (isLoading) {
@@ -83,7 +82,7 @@ export default function ChannelList() {
           <li
             key={channel._id}
             className="channel-item"
-            onClick={() => handleChannelClick(channel._id)}
+            onClick={() => handleChannelClick(channel)}
           >
             <span className="channel-name">{channel.name}</span>
             {channel.isPrivate && (

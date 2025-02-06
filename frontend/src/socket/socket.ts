@@ -6,13 +6,10 @@ import { SOCKET_IO_URL } from '../config/constants';
 
 export type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
-const socket = io(SOCKET_IO_URL, {
-  autoConnect: false,
-  withCredentials: true,
+const socket = io(import.meta.env.VITE_WS_URL || 'http://localhost:3001', {
+  autoConnect: true,
   reconnection: true,
-  reconnectionAttempts: 5,
-  reconnectionDelay: 1000,
-  timeout: 10000
+  transports: ['websocket', 'polling']
 }) as TypedSocket;
 
 // Initialize connection handlers
