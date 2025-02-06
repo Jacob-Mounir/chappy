@@ -64,31 +64,30 @@ export const createChannel = async (req: AuthRequest, res: Response) => {
 
 export const joinChannel = async (req: AuthRequest, res: Response) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-
     const channel = await Channel.findById(req.params.channelId);
     if (!channel) {
       return res.status(404).json({ message: 'Channel not found' });
     }
 
-    // Check for private channel access
-    if (channel.isPrivate && req.userState?.type !== 'authenticated') {
-      return res.status(403).json({
-        message: 'Private channels are only accessible to registered users'
-      });
+    // For public channels, allow everyone
+    if (!channel.isPrivate && !channel.isRestricted) {
+      return res.json(channel);
     }
 
-    if (channel.members.some(id => id.equals(req.user!._id))) {
-      return res.status(400).json({ message: 'Already a member' });
+    // For private/restricted channels, require authentication
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
     }
 
-    channel.members.push(req.user._id);
-    await channel.save();
+    // Add authenticated user to members
+    if (!channel.members.some(id => id.equals(req.user!._id))) {
+      channel.members.push(req.user._id);
+      await channel.save();
+    }
 
     res.json(channel);
   } catch (error) {
+    console.error('Error joining channel:', error);
     res.status(500).json({ message: 'Error joining channel' });
   }
 };

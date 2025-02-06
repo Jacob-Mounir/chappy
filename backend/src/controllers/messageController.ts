@@ -44,45 +44,38 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     const { channelId } = req.params;
     const { content, guestName } = req.body;
 
-    // Basic validation
     if (!content?.trim()) {
       return res.status(400).json({ message: 'Message content is required' });
     }
 
-    // Check channel exists and get its properties
     const channel = await Channel.findById(channelId);
     if (!channel) {
       return res.status(404).json({ message: 'Channel not found' });
     }
 
-    // Check permissions
-    if ((channel.isPrivate || channel.isRestricted) && req.userState?.type !== 'authenticated') {
-      return res.status(403).json({
-        message: 'Only registered users can send messages in this channel'
-      });
+    // Only allow guests in public channels
+    if ((channel.isPrivate || channel.isRestricted) && !req.user) {
+      return res.status(403).json({ message: 'Authentication required' });
     }
 
-    // Create and save message
     const message = new Message({
       content: content.trim(),
       channel: channelId,
-      sender: req.userState?.type === 'authenticated'
-        ? {
-            _id: req.userState._id,
-            username: req.userState.username,
-            type: 'authenticated'
-          }
-        : {
-            username: guestName || 'Guest',
-            type: 'guest'
-          }
+      sender: req.user ? {
+        _id: req.user._id,
+        username: req.user.username,
+        type: 'authenticated'
+      } : {
+        username: guestName || 'Guest',
+        type: 'guest'
+      }
     });
 
     await message.save();
-    return res.status(201).json(message);
+    res.status(201).json(message);
   } catch (error) {
     console.error('Error sending message:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Error sending message' });
   }
 };
 
