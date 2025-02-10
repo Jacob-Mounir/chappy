@@ -4,7 +4,7 @@ import { ThemeProvider } from './components/providers/ThemeProvider';
 import { Toaster } from 'sonner';
 import Routes from './Routes';
 import { useAuth, useChat } from './store/useStore';
-import { socketService } from './lib/socket';
+import { socketService } from './services/socket';
 
 function App() {
   const { checkAuth, user, isLoading } = useAuth();

@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { Socket } from 'socket.io-client';
 import { useAuth } from '../store/useStore';
 import { toast } from 'sonner';
+import { socketService } from '../services/socket';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -11,30 +12,21 @@ const SocketContext = createContext<SocketContextType>({ socket: null });
 
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
-  const { user } = useAuth(); // Get auth state
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Only connect if we have a user
     if (!user) {
       if (socket) {
-        socket.disconnect();
+        socketService.disconnect();
         setSocket(null);
       }
       return;
     }
 
     const token = localStorage.getItem('token');
-    if (!token) return;
+    const guestName = localStorage.getItem('guestName');
 
-    const newSocket = io(import.meta.env.VITE_WS_URL, {
-      auth: {
-        token
-      },
-      autoConnect: true,
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
+    const newSocket = socketService.connect(token, guestName);
 
     newSocket.on('connect', () => {
       console.log('Socket connected successfully');
@@ -58,11 +50,9 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     setSocket(newSocket);
 
     return () => {
-      console.log('Cleaning up socket connection');
-      newSocket.removeAllListeners();
-      newSocket.close();
+      socketService.disconnect();
     };
-  }, [user]); // Depend on user state
+  }, [user]);
 
   return (
     <SocketContext.Provider value={{ socket }}>

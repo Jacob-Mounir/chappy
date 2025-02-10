@@ -8,8 +8,7 @@ import { createDirectMessageSlice } from './slices/directMessageSlice';
 import type { User } from '../types/user';
 import { authApi } from '../api/auth';
 import axios from 'axios';
-import { connectSocket } from '../socket/socket';
-import io from 'socket.io-client';
+import { socketService } from '../services/socket';
 
 type StoreSet = (
   partial: StoreState | Partial<StoreState> | ((state: StoreState) => StoreState | Partial<StoreState>),
@@ -214,30 +213,30 @@ export const chatSlice = (set: StoreSet, get: StoreGet) => ({
         const response = await fetch(`/api/channels/${channelId}/join`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
 
         if (!response.ok) {
           const error = await response.json();
+          if (response.status === 403) {
+            throw new Error('This channel requires authentication');
+          }
           throw new Error(error.message || 'Failed to join channel');
         }
 
-        // Connect socket after successful join
-        const token = localStorage.getItem('token');
-        const guestName = localStorage.getItem('guestName');
-        connectSocket(token, guestName);
-
-        // Join socket room
-        const socket = io();
-        socket.emit('join_channel', channelId);
-
-        // Refresh channels
+        // Refresh channels after joining
         await get().chat.fetchChannels();
 
       } catch (error) {
         console.error('Error joining channel:', error);
-        throw error;
+        set({
+          chat: {
+            ...get().chat,
+            error: error instanceof Error ? error.message : 'Failed to join channel'
+          }
+        });
       }
     },
 
