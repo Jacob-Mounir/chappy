@@ -19,7 +19,7 @@ router.use(auth);
 // Channel routes
 router.get('/', getChannels);
 router.post('/', requireAuth, createChannel);
-router.post('/:channelId/join', joinChannel);
+router.post('/:channelId/join', auth, joinChannel);
 router.post('/:channelId/leave', requireAuth, leaveChannel);
 router.get('/:channelId', getChannel);
 router.delete('/:channelId', requireAuth, deleteChannel);

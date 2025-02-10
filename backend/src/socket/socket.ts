@@ -16,14 +16,23 @@ const io = new Server(httpServer, {
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth.token;
-    if (!token) {
-      return next(new Error('Authentication error'));
+    if (token) {
+      // Authenticated user
+      const user = await verifyToken(token);
+      socket.data.user = {
+        ...user,
+        type: 'authenticated'
+      };
+    } else {
+      // Guest user
+      socket.data.user = {
+        type: 'guest',
+        username: socket.handshake.auth.guestName || 'Guest'
+      };
     }
-
-    const user = await verifyToken(token);
-    socket.data.user = user;
     next();
   } catch (error) {
+    console.error('Socket authentication error:', error);
     next(new Error('Authentication error'));
   }
 });

@@ -27,14 +27,17 @@ socket.on('connect_error', (error) => {
 });
 
 // Connection management
-export const connectSocket = (token: string | null) => {
-  // Set auth token if provided
+export const connectSocket = (token: string | null, guestName?: string) => {
+  const auth: any = {};
+
   if (token) {
-    // Update the auth configuration before connecting
-    socket.auth = { token };
+    auth.token = token;
+  } else {
+    auth.guestName = guestName || 'Guest';
   }
 
-  // Connect if not already connected
+  socket.auth = auth;
+
   if (!socket.connected) {
     socket.connect();
   }

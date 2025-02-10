@@ -47,7 +47,7 @@ export default function ChannelList() {
     if (socket) {
       socket.on("channel_updated", fetchChannels);
       socket.on("channel_created", fetchChannels);
-      socket.on("channel_deleted", fetchChannels);
+s      socket.on("channel_deleted", fetchChannels);
 
       return () => {
         socket.off("channel_updated");
