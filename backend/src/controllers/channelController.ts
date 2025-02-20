@@ -119,20 +119,29 @@ export const leaveChannel = async (req: AuthRequest, res: Response) => {
 
 export const getChannel = async (req: AuthRequest, res: Response) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-
     const channelId = req.params.channelId;
     const channel = await Channel.findById(channelId);
     if (!channel) {
       return res.status(404).json({ message: 'Channel not found' });
     }
 
-    const userId = req.user._id;
-    // if (channel.isPrivate && !channel.members.some(id => id.equals(userId))) {
-    //   return res.status(403).json({ message: 'Access denied' });
-    // }
+    // For private/restricted channels, require authentication
+    if (channel.isPrivate || channel.isRestricted) {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+
+      // At this point, we know req.user exists
+      const user = req.user;
+
+      // For private channels, check membership
+      if (channel.isPrivate) {
+        const isMember = channel.members.some(id => id.equals(user._id));
+        if (!isMember) {
+          return res.status(403).json({ message: 'Access denied' });
+        }
+      }
+    }
 
     res.json(channel);
   } catch (error) {

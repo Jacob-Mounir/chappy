@@ -2,7 +2,7 @@ import { StateCreator } from 'zustand';
 import { StoreState } from '../../types/store';
 import api from '../../lib/api';
 import { socketService } from '../../lib/socket';
-import type { Channel, Message } from '../../types/chat';
+import type { Channel, Message, User } from '../../types/chat';
 import { toast } from 'sonner';
 
 export const createChatSlice: StateCreator<
@@ -41,9 +41,6 @@ export const createChatSlice: StateCreator<
     },
 
     setCurrentChannel: async (channelId: string) => {
-
-      console.log('Channel ID:', channelId);
-
       try {
         set(state => ({ chat: { ...state.chat, isLoading: true } }));
 
@@ -55,8 +52,8 @@ export const createChatSlice: StateCreator<
 
         // Fetch channel details and messages
         const [channelRes, messagesRes] = await Promise.all([
-          api.get<Channel>(`/api/channels/${channelId._id}`),
-          api.get<Message[]>(`/api/channels/${channelId._id}/messages`)
+          api.get<Channel>(`/api/channels/${channelId}`),
+          api.get<Message[]>(`/api/channels/${channelId}/messages`)
         ]);
 
         // Join new channel
@@ -71,6 +68,7 @@ export const createChatSlice: StateCreator<
           }
         }));
       } catch (error) {
+        console.error('Failed to load channel:', error);
         set(state => ({
           chat: {
             ...state.chat,
@@ -84,12 +82,18 @@ export const createChatSlice: StateCreator<
     sendMessage: async (content: string, channelId: string) => {
       if (!content.trim() || !channelId) return;
 
+      const guestUser: User = {
+        _id: 'guest',
+        username: localStorage.getItem('guestName') || 'Guest',
+        type: 'guest'
+      };
+
       const optimisticMessage: Message = {
         _id: `temp-${Date.now()}`,
         content: content.trim(),
         channel: channelId,
         createdAt: new Date().toISOString(),
-        sender: get().auth.user || { type: 'guest', username: localStorage.getItem('guestName') || 'Guest' }
+        sender: get().auth.user || guestUser
       };
 
       // Add optimistic message
