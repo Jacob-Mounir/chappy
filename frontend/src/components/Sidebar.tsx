@@ -149,10 +149,10 @@ export function Sidebar({ onClose }: SidebarProps) {
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-gray-300 hover:bg-[#1f1f1f]"
-                  onClick={() => navigate("/messages")}
+                  onClick={() => navigate("/users")}
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
-                  View Messages
+                  View Users
                 </Button>
               </div>
             </>
