@@ -1,4 +1,4 @@
-import express from 'express';
+import { Router } from 'express';
 import authRoutes from './authRoutes';
 import channelRoutes from './channelRoutes';
 import messageRoutes from './messageRoutes';
@@ -6,7 +6,7 @@ import directMessageRoutes from './directMessageRoutes';
 import { getUsers } from '../controllers/userController';
 import { requireAuth } from '../middleware/auth';
 
-const router = express.Router();
+const router = Router();
 
 // Health check
 router.get('/health', (_, res) => {
@@ -20,10 +20,10 @@ router.use('/auth', authRoutes);
 router.use('/channels', channelRoutes);
 
 // Message routes
-router.use('/messages', messageRoutes);
+router.use('/channels/:channelId/messages', messageRoutes);
 
 // Direct message routes
-router.use('/dm', directMessageRoutes);
+router.use('/direct-messages', directMessageRoutes);
 
 // User routes
 router.get('/users', requireAuth, getUsers);

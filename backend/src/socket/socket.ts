@@ -1,106 +1,69 @@
 import { Server } from 'socket.io';
 import { Server as HttpServer } from 'http';
-import { verifyToken } from '../middleware/auth';
 import { Message } from '../models/Message';
 import { Channel } from '../models/Channel';
-import { config } from '../config/config';
-import { ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData } from '../types/socket';
+import { verifyToken } from '../middleware/auth';
+import type { ServerToClientEvents, ClientToServerEvents } from '../types/socket';
 
-export const createSocketServer = (httpServer: HttpServer) => {
-  const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {
+export const setupSocket = (server: HttpServer) => {
+  const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
     cors: {
-      origin: config.corsOrigins,
-      methods: ['GET', 'POST'],
-      credentials: true
-    },
-    pingTimeout: config.socket.pingTimeout,
-    pingInterval: config.socket.pingInterval
-  });
-
-  io.use(async (socket, next) => {
-    try {
-      const token = socket.handshake.auth.token;
-      if (token) {
-        // Authenticated user
-        const user = await verifyToken(token);
-        socket.data.user = {
-          ...user,
-          type: 'authenticated'
-        };
-      } else {
-        // Guest user
-        socket.data.user = {
-          type: 'guest',
-          username: socket.handshake.auth.guestName || 'Guest'
-        };
-      }
-      next();
-    } catch (error) {
-      console.error('Socket authentication error:', error);
-      next();  // Allow connection even if auth fails
+      origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:5173'],
+      methods: ['GET', 'POST']
     }
   });
 
-  io.on('connection', (socket) => {
-    console.log('Client connected:', {
-      id: socket.id,
-      auth: socket.handshake.auth,
-      headers: socket.handshake.headers,
-    });
-
-    // Join channel room
-    socket.on('join_channel', (channelId) => {
-      console.log(`User ${socket.id} joining channel: ${channelId}`);
-      socket.join(channelId);
-    });
-
-    // Leave channel room
-    socket.on('leave_channel', (channelId) => {
-      console.log(`User ${socket.id} leaving channel: ${channelId}`);
-      socket.leave(channelId);
-    });
-
-    // Handle new message
-    socket.on('message', async (data) => {
+  io.use(async (socket, next) => {
+    const token = socket.handshake.auth.token;
+    if (token) {
       try {
-        const { channelId, content, guestName } = data;
-        console.log('New message:', data);
+        const user = await verifyToken(token);
+        socket.data.user = user;
+      } catch (error) {
+        // Allow connection without authentication
+      }
+    }
+    next();
+  });
 
-        // Verify channel exists
-        const channel = await Channel.findById(channelId);
+  io.on('connection', (socket) => {
+    console.log('Client connected:', socket.id);
+
+    socket.on('join_channel', (channelId: string) => {
+      socket.join(channelId);
+      console.log(`Client ${socket.id} joined channel ${channelId}`);
+    });
+
+    socket.on('leave_channel', (channelId: string) => {
+      socket.leave(channelId);
+      console.log(`Client ${socket.id} left channel ${channelId}`);
+    });
+
+    socket.on('send_message', async (data: { channelId: string; content: string }) => {
+      try {
+        const channel = await Channel.findById(data.channelId);
         if (!channel) {
-          socket.emit('error', 'Channel not found');
+          socket.emit('error', { message: 'Channel not found' });
           return;
         }
 
-        // Check channel restrictions
-        if (channel.isRestricted && socket.data.user.type !== 'authenticated') {
-          socket.emit('error', 'Only authenticated users can send messages in restricted channels');
+        if (channel.isRestricted && !socket.data.user) {
+          socket.emit('error', { message: 'Authentication required for this channel' });
           return;
         }
 
-        // Create message
         const message = new Message({
-          content: content.trim(),
-          channel: channelId,
-          sender: socket.data.user.type === 'authenticated' ? {
-            _id: socket.data.user._id,
-            username: socket.data.user.username,
-            type: 'authenticated'
-          } : {
-            type: 'guest',
-            username: guestName || 'Guest'
-          }
+          content: data.content.trim(),
+          channel: data.channelId,
+          sender: socket.data.user || { type: 'guest', username: 'Guest' }
         });
 
-        await message.save();
-        console.log('Message saved:', message);
-
-        // Broadcast to channel
-        io.to(channelId).emit('message', message);
+        const savedMessage = await message.save();
+        const populatedMessage = await savedMessage.populate('sender', 'username');
+        io.to(data.channelId).emit('message', populatedMessage.toObject());
       } catch (error) {
-        console.error('Socket message error:', error);
-        socket.emit('error', 'Failed to send message');
+        console.error('Error sending message:', error);
+        socket.emit('error', { message: 'Failed to send message' });
       }
     });
 

@@ -8,19 +8,19 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
   try {
     const { channelId } = req.params;
 
-    // Kontrollera att kanalen finns
+    // Check if channel exists
     const channel = await Channel.findById(channelId);
     if (!channel) {
       return res.status(404).json({ message: 'Channel not found' });
     }
 
-    // Kontrollera behörighet för privata kanaler
+    // Check permissions for private channels
     if (channel.isPrivate) {
-      if (req.userState?.type !== 'authenticated') {
+      if (!req.user) {
         return res.status(403).json({ message: 'Authentication required for private channels' });
       }
 
-      const userId = new Types.ObjectId(req.userState._id);
+      const userId = new Types.ObjectId(req.user._id);
       const isChannelMember = channel.members.some(id => id.equals(userId));
 
       if (!isChannelMember) {

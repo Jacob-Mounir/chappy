@@ -4,6 +4,7 @@ import { User } from '../models/User';
 import { schemas } from '../validation/schemas';
 import { AuthRequest } from '../middleware/auth';
 import type { RouteHandler } from '../types/express';
+import bcrypt from 'bcryptjs';
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -29,11 +30,12 @@ export const register = async (req: Request, res: Response) => {
       });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
     // Create new user
     const user = new User({
       username,
       email,
-      password
+      password: hashedPassword
     });
 
     await user.save();
@@ -73,9 +75,9 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
 
-    const isMatch = await user.comparePassword(password);
+    const isValidPassword = await bcrypt.compare(password, user.password);
 
-    if (!isMatch) {
+    if (!isValidPassword) {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
 
@@ -102,10 +104,14 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-export const me: RouteHandler = async (req: AuthRequest, res: Response) => {
+export const logout = async (_req: Request, res: Response) => {
+  res.json({ message: 'Logged out successfully' });
+};
+
+export const getCurrentUser = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      return res.status(401).json({ message: 'Not authenticated' });
     }
 
     const user = await User.findById(req.user._id).select('-password');
@@ -115,7 +121,7 @@ export const me: RouteHandler = async (req: AuthRequest, res: Response) => {
 
     res.json(user);
   } catch (error) {
-    console.error('Error in me controller:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Get current user error:', error);
+    res.status(500).json({ message: 'Error fetching user' });
   }
 };

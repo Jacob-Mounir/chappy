@@ -5,6 +5,7 @@ export interface Channel {
   name: string;
   description?: string;
   isPrivate: boolean;
+  isRestricted: boolean;
   members: string[];
   createdAt: string;
   updatedAt: string;
@@ -12,12 +13,10 @@ export interface Channel {
 
 export interface Message {
   _id: string;
-  channelId: string;
-  userId: string;
-  username: string;
   content: string;
+  channel: string;
+  sender: User;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface ChatState {
@@ -33,4 +32,10 @@ export interface Conversation {
   username: string;
   lastMessage?: Message;
   unreadCount?: number;
+}
+
+export interface User {
+  _id: string;
+  username: string;
+  type: 'authenticated' | 'guest';
 }

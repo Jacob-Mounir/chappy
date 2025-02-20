@@ -1,25 +1,15 @@
-import type { Message, DirectMessage } from './store';
+import type { Message } from './chat';
 
 export interface ServerToClientEvents {
   message: (message: Message) => void;
-  direct_message: (message: DirectMessage) => void;
-  user_status: (data: { userId: string; status: string }) => void;
-  typing: (data: { userId: string; username: string; channelId: string }) => void;
-  error: (message: string) => void;
-  connect: () => void;
-  disconnect: () => void;
-  connect_error: (error: Error) => void;
-  reconnect: (attemptNumber: number) => void;
-  reconnect_attempt: (attemptNumber: number) => void;
+  error: (error: { message: string }) => void;
+  user_status: (data: { userId: string | null; username: string; status: string }) => void;
 }
 
 export interface ClientToServerEvents {
   join_channel: (channelId: string) => void;
   leave_channel: (channelId: string) => void;
-  message: (data: { channelId: string; content: string; guestName?: string }) => void;
-  direct_message: (data: { recipientId: string; content: string }) => void;
-  typing: (data: { channelId: string }) => void;
-  status_change: (status: string) => void;
+  send_message: (data: { channelId: string; content: string }) => void;
 }
 
 export interface SocketAuth {
