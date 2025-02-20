@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 import { Toaster } from 'sonner';
 import { MainLayout } from './components/MainLayout';
-import Chat from './components/Chat';
+import Chat from './components/Chat.tsx';
 import { UsersList } from './components/UsersList';
 import { DirectMessage } from './components/DirectMessage';
 import { useAuth, useChat } from './store/useStore';

@@ -9,9 +9,9 @@ import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
-import type { Channel } from "../types/channel";
+import type { Channel } from "../types/chat";
 
-export default function Chat() {
+export function Chat() {
   const navigate = useNavigate();
   const { socket } = useSocket();
   const {
@@ -185,3 +185,5 @@ export default function Chat() {
     </div>
   );
 }
+
+export default Chat;

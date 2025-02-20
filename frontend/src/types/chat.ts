@@ -5,10 +5,11 @@ export interface Channel {
   name: string;
   description?: string;
   isPrivate: boolean;
-  isRestricted: boolean;
   members: string[];
+  createdBy: string;
   createdAt: string;
   updatedAt: string;
+  unreadCount?: number;
 }
 
 export interface Message {
