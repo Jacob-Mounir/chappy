@@ -3,11 +3,12 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 import { Toaster } from 'sonner';
 import { MainLayout } from './components/MainLayout';
-import { Chat } from './components/Chat';
+import Chat from './components/Chat';
 import { UsersList } from './components/UsersList';
 import { DirectMessage } from './components/DirectMessage';
 import { useAuth, useChat } from './store/useStore';
 import { socketService } from './services/socket';
+import { UserProvider } from './contexts/UserContext';
 
 export const App = () => {
   const { checkAuth, user, isLoading } = useAuth();
@@ -39,14 +40,16 @@ export const App = () => {
   return (
     <Router>
       <ThemeProvider defaultTheme="dark" storageKey="ui-theme">
-        <Toaster position="top-center" richColors />
-        <Routes>
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<Chat />} />
-            <Route path="/users" element={<UsersList />} />
-            <Route path="/dm/:userId" element={<DirectMessage />} />
-          </Route>
-        </Routes>
+        <UserProvider>
+          <Toaster position="top-center" richColors />
+          <Routes>
+            <Route path="/" element={<MainLayout />}>
+              <Route index element={<Chat />} />
+              <Route path="/users" element={<UsersList />} />
+              <Route path="/dm/:userId" element={<DirectMessage />} />
+            </Route>
+          </Routes>
+        </UserProvider>
       </ThemeProvider>
     </Router>
   );

@@ -7,4 +7,5 @@ export interface Channel {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  unreadCount?: number;
 }
