@@ -15,23 +15,19 @@ export const getOnlineUsers: RouteHandler = async (req, res) => {
 
 export const getUsers = async (req: AuthRequest, res: Response) => {
   try {
-    if (!req.user?._id) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-
-    const users = await User.find({
-      _id: { $ne: req.user._id }
-    })
-      .select('username isOnline avatarColor')
+    const users = await User.find()
+      .select('username isOnline')
       .sort({ username: 1 });
 
-    res.json(users);
+    // If authenticated, exclude the current user from the list
+    const filteredUsers = req.user
+      ? users.filter(user => user._id.toString() !== req.user?._id.toString())
+      : users;
+
+    res.json(filteredUsers);
   } catch (error) {
     console.error('Error fetching users:', error);
-    res.status(500).json({
-      message: 'Failed to fetch users',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
+    res.status(500).json({ message: 'Error fetching users' });
   }
 };
 
@@ -57,5 +53,21 @@ export const getOrCreateConversation = async (req: AuthRequest, res: Response) =
   } catch (error) {
     console.error('Error in getOrCreateConversation:', error);
     res.status(500).json({ message: 'Error handling conversation' });
+  }
+};
+
+export const getUserProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select('username isOnline');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ message: 'Error fetching user profile' });
   }
 };

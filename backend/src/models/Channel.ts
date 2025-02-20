@@ -1,10 +1,10 @@
 import mongoose from 'mongoose'
+import type { Document } from 'mongoose'
 
-interface IChannel extends mongoose.Document {
+export interface IChannel extends Document {
   name: string;
   description?: string;
   isPrivate: boolean;
-  isRestricted?: boolean;
   members: mongoose.Types.ObjectId[];
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -25,10 +25,6 @@ const channelSchema = new mongoose.Schema({
     maxlength: 200
   },
   isPrivate: {
-    type: Boolean,
-    default: false
-  },
-  isRestricted: {
     type: Boolean,
     default: false
   },

@@ -50,13 +50,16 @@ export const createChatSlice: StateCreator<
           socketService.leaveChannel(currentChannel._id);
         }
 
+        // Join the channel first (this will handle private channel access)
+        await api.post(`/api/channels/${channelId}/join`);
+
         // Fetch channel details and messages
         const [channelRes, messagesRes] = await Promise.all([
           api.get<Channel>(`/api/channels/${channelId}`),
           api.get<Message[]>(`/api/channels/${channelId}/messages`)
         ]);
 
-        // Join new channel
+        // Join socket room
         socketService.joinChannel(channelId);
 
         set(state => ({
@@ -72,10 +75,11 @@ export const createChatSlice: StateCreator<
         set(state => ({
           chat: {
             ...state.chat,
-            error: 'Failed to load channel',
+            error: error.response?.data?.message || 'Failed to load channel',
             isLoading: false
           }
         }));
+        toast.error(error.response?.data?.message || 'Failed to load channel');
       }
     },
 
@@ -117,6 +121,7 @@ export const createChatSlice: StateCreator<
             error: 'Failed to send message'
           }
         }));
+        toast.error('Failed to send message');
       }
     },
 

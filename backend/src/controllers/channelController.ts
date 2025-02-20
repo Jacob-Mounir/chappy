@@ -36,7 +36,7 @@ export const createChannel = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { name, description, isPrivate, isRestricted } = value;
+    const { name, description, isPrivate } = value;
 
     const existingChannel = await Channel.findOne({ name });
     if (existingChannel) {
@@ -47,7 +47,6 @@ export const createChannel = async (req: AuthRequest, res: Response) => {
       name,
       description,
       isPrivate,
-      isRestricted,
       members: [req.user._id],
       createdBy: req.user._id
     });
@@ -125,21 +124,18 @@ export const getChannel = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Channel not found' });
     }
 
-    // For private/restricted channels, require authentication
-    if (channel.isPrivate || channel.isRestricted) {
+    // For private channels, require authentication and membership
+    if (channel.isPrivate) {
       if (!req.user) {
-        return res.status(401).json({ message: 'Authentication required' });
+        return res.status(401).json({ message: 'Authentication required for private channels' });
       }
 
       // At this point, we know req.user exists
       const user = req.user;
 
-      // For private channels, check membership
-      if (channel.isPrivate) {
-        const isMember = channel.members.some(id => id.equals(user._id));
-        if (!isMember) {
-          return res.status(403).json({ message: 'Access denied' });
-        }
+      const isMember = channel.members.some(id => id.equals(user._id));
+      if (!isMember) {
+        return res.status(403).json({ message: 'You are not a member of this channel' });
       }
     }
 

@@ -1,12 +1,15 @@
 import { useEffect } from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 import { Toaster } from 'sonner';
-import Routes from './Routes';
+import { Layout } from './components/Layout';
+import { Chat } from './components/Chat';
+import { UsersList } from './components/UsersList';
+import { DirectMessage } from './components/DirectMessage';
 import { useAuth, useChat } from './store/useStore';
 import { socketService } from './services/socket';
 
-function App() {
+export const App = () => {
   const { checkAuth, user, isLoading } = useAuth();
   const { addMessage } = useChat();
 
@@ -34,13 +37,19 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
+    <Router>
       <ThemeProvider defaultTheme="dark" storageKey="ui-theme">
         <Toaster position="top-center" richColors />
-        <Routes />
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Chat />} />
+            <Route path="/users" element={<UsersList />} />
+            <Route path="/dm/:userId" element={<DirectMessage />} />
+          </Route>
+        </Routes>
       </ThemeProvider>
-    </BrowserRouter>
+    </Router>
   );
-}
+};
 
 export default App;
