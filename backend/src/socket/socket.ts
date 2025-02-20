@@ -3,14 +3,18 @@ import { Server as HttpServer } from 'http';
 import { verifyToken } from '../middleware/auth';
 import { Message } from '../models/Message';
 import { Channel } from '../models/Channel';
+import { config } from '../config/config';
+import { ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData } from '../types/socket';
 
 export const createSocketServer = (httpServer: HttpServer) => {
-  const io = new Server(httpServer, {
+  const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {
     cors: {
-      origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+      origin: config.corsOrigins,
       methods: ['GET', 'POST'],
       credentials: true
-    }
+    },
+    pingTimeout: config.socket.pingTimeout,
+    pingInterval: config.socket.pingInterval
   });
 
   io.use(async (socket, next) => {

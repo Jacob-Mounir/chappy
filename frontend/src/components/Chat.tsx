@@ -76,18 +76,9 @@ export default function Chat() {
   useEffect(() => {
     if (!socket) return;
 
-    // Handle incoming messages
-    socket.on("message", (message: Message) => {
-      console.log("Received message:", message);
-      if (message.channelId === currentChannel?._id) {
-        sendMessage(message.content, currentChannel._id);
-      }
-    });
-
-    // Handle channel updates by refreshing the channel list, but only if needed
+    // Handle channel updates
     socket.on("user_status", () => {
       console.log("User status changed, refreshing channels");
-      // Only fetch if we have channels and we're not in a loading state
       if (!isLoading && channels && channels.length > 0) {
         fetchChannels().catch(console.error);
       }
@@ -98,34 +89,18 @@ export default function Chat() {
       if (currentChannel?._id) {
         fetchMessages(currentChannel._id);
       }
-      // Only fetch channels if we have some already and we're not loading
       if (!isLoading && channels && channels.length > 0) {
         fetchChannels().catch(console.error);
       }
     };
 
-    socket.on("connect_error", (error: Error) => {
-      console.error("Connection error:", error);
-      toast.warning("Lost connection. Reconnecting...");
-    });
-
     socket.on("reconnect", handleReconnect);
 
     return () => {
-      socket.off("message");
       socket.off("user_status");
-      socket.off("connect_error");
       socket.off("reconnect");
     };
-  }, [
-    socket,
-    currentChannel,
-    fetchMessages,
-    fetchChannels,
-    channels,
-    isLoading,
-    sendMessage,
-  ]);
+  }, [socket, currentChannel, fetchMessages, fetchChannels, channels, isLoading]);
 
   const canSendMessage = (channel: Channel) => {
     // For private channels, only authenticated users can send messages

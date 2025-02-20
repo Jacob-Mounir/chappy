@@ -82,25 +82,34 @@ export const createChatSlice: StateCreator<
     },
 
     sendMessage: async (content: string, channelId: string) => {
+      if (!content.trim() || !channelId) return;
+
+      const optimisticMessage: Message = {
+        _id: `temp-${Date.now()}`,
+        content: content.trim(),
+        channel: channelId,
+        createdAt: new Date().toISOString(),
+        sender: get().auth.user || { type: 'guest', username: localStorage.getItem('guestName') || 'Guest' }
+      };
+
+      // Add optimistic message
+      set(state => ({
+        chat: {
+          ...state.chat,
+          messages: [...state.chat.messages, optimisticMessage]
+        }
+      }));
+
       try {
-        const { data } = await api.post<Message>(`/api/channels/${channelId}/messages`, {
-          content
-        });
-
-        // Optimistically add message to state
-        set(state => ({
-          chat: {
-            ...state.chat,
-            messages: [...state.chat.messages, data]
-          }
-        }));
-
-        // Send via socket for real-time updates
+        // Send via socket
         socketService.sendMessage(channelId, content);
       } catch (error) {
+        console.error('Failed to send message:', error);
+        // Remove optimistic message on failure
         set(state => ({
           chat: {
             ...state.chat,
+            messages: state.chat.messages.filter(msg => msg._id !== optimisticMessage._id),
             error: 'Failed to send message'
           }
         }));

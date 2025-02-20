@@ -1,17 +1,19 @@
 import { io, Socket } from 'socket.io-client';
 import type { ServerToClientEvents, ClientToServerEvents } from '../types/socket';
-
-const SOCKET_URL = import.meta.env.VITE_WS_URL || 'http://localhost:5000';
+import type { Message } from '../types/messages';
+import { env } from '../config/env';
 
 class SocketService {
   private socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
+  private isConnected = false;
+  private messageQueue: { channelId: string; content: string; guestName?: string }[] = [];
 
   connect(token: string | null, guestName?: string) {
     if (this.socket) {
       this.socket.disconnect();
     }
 
-    this.socket = io(SOCKET_URL, {
+    this.socket = io(env.SOCKET_URL, {
       auth: token ? { token } : { guestName: guestName || 'Guest' },
       withCredentials: true,
       reconnection: true,
