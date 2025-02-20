@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 import { Toaster } from 'sonner';
-import { Layout } from './components/Layout';
+import { MainLayout } from './components/MainLayout';
 import { Chat } from './components/Chat';
 import { UsersList } from './components/UsersList';
 import { DirectMessage } from './components/DirectMessage';
@@ -41,7 +41,7 @@ export const App = () => {
       <ThemeProvider defaultTheme="dark" storageKey="ui-theme">
         <Toaster position="top-center" richColors />
         <Routes>
-          <Route path="/" element={<Layout />}>
+          <Route path="/" element={<MainLayout />}>
             <Route index element={<Chat />} />
             <Route path="/users" element={<UsersList />} />
             <Route path="/dm/:userId" element={<DirectMessage />} />
