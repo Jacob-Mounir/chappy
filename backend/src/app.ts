@@ -41,6 +41,17 @@ app.use(cors(corsOptions));
 // Rate limiting
 app.use(apiLimiter);
 
+// Health check endpoint
+app.get('/api/health', (req: Request, res: Response) => {
+  const status = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  };
+  res.json(status);
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/channels', channelRoutes);

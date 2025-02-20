@@ -6,9 +6,10 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
-    "build": "mkdir -p dist && cp -r src/* dist/ && tsc",
-    "build:prod": "node scripts/build.js",
-    "postinstall": "npm run build:prod",
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "postinstall": "npm run build",
     "lint": "eslint src/**/*.ts",
     "test": "jest"
   },
