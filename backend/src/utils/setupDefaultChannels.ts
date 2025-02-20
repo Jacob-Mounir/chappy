@@ -3,7 +3,7 @@ import { User } from '../models/User'
 
 export const setupDefaultChannels = async () => {
   try {
-    // Skapa en admin-användare om den inte finns
+    // Create admin user if it doesn't exist
     let adminUser = await User.findOne({ email: 'admin@chappy.com' })
 
     if (!adminUser) {
@@ -15,19 +15,17 @@ export const setupDefaultChannels = async () => {
       })
     }
 
-    // Skapa standardkanaler om de inte finns
+    // Create default channels if they don't exist
     const defaultChannels = [
       {
         name: 'allmänt',
         description: 'Allmän diskussion för alla användare',
-        isPrivate: false,
-        isRestricted: false
+        isPrivate: false
       },
       {
         name: 'nyheter',
         description: 'Nyheter och uppdateringar - endast för registrerade användare',
-        isPrivate: false,
-        isRestricted: true
+        isPrivate: true
       }
     ]
 

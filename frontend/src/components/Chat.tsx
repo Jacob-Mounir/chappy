@@ -197,6 +197,12 @@ export default function Chat() {
           )}
         </div>
       )}
+
+      {currentChannel.isPrivate && !userState && (
+        <div className="text-center p-4 bg-yellow-500/10 text-yellow-500">
+          This is a private channel. Please log in to participate.
+        </div>
+      )}
     </div>
   );
 }

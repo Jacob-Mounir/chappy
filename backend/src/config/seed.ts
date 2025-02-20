@@ -79,6 +79,19 @@ export const seedData = async () => {
       console.log('Restricted announcements channel created successfully');
     }
 
+    const channels = [
+      {
+        name: 'general',
+        description: 'General discussion for all users',
+        isPrivate: false
+      },
+      {
+        name: 'news',
+        description: 'News and updates - for registered users only',
+        isPrivate: true
+      }
+    ];
+
     console.log('Seed data created successfully');
   } catch (error) {
     console.error('Error seeding data:', error);

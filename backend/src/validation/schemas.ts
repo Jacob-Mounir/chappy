@@ -62,11 +62,8 @@ export const schemas = {
           'string.max': 'Channel name cannot exceed 30 characters',
           'string.empty': 'Channel name is required'
         }),
-      isPrivate: Joi.boolean().default(false),
-      isRestricted: Joi.boolean().default(false),
-      description: Joi.string().max(200).allow('').messages({
-        'string.max': 'Description cannot exceed 200 characters'
-      })
+      description: Joi.string().max(200),
+      isPrivate: Joi.boolean().default(false)
     })
   },
   directMessage: {

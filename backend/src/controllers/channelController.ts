@@ -9,7 +9,7 @@ export const getChannels = async (req: AuthRequest, res: Response) => {
   try {
     const query = req.userState?.type === 'authenticated'
       ? {}  // Empty query to show all channels
-      : { isPrivate: false, isRestricted: false };
+      : { isPrivate: false };  // Only show public channels for non-authenticated users
 
     const channels = await Channel.find(query)
       .populate('createdBy', 'username')
