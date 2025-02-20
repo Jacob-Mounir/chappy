@@ -54,7 +54,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     }
 
     // Only allow guests in public channels
-    if ((channel.isPrivate || channel.isRestricted) && !req.user) {
+    if (channel.isPrivate && !req.user) {
       return res.status(403).json({ message: 'Authentication required' });
     }
 

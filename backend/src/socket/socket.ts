@@ -47,7 +47,7 @@ export const setupSocket = (server: HttpServer) => {
           return;
         }
 
-        if (channel.isRestricted && !socket.data.user) {
+        if (channel.isPrivate && !socket.data.user) {
           socket.emit('error', { message: 'Authentication required for this channel' });
           return;
         }

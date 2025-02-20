@@ -69,11 +69,11 @@ export const joinChannel = async (req: AuthRequest, res: Response) => {
     }
 
     // For public channels, allow everyone
-    if (!channel.isPrivate && !channel.isRestricted) {
+    if (!channel.isPrivate) {
       return res.json(channel);
     }
 
-    // For private/restricted channels, require authentication
+    // For private channels, require authentication
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required' });
     }

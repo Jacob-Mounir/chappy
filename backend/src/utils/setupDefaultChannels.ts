@@ -39,10 +39,16 @@ export const setupDefaultChannels = async () => {
           createdBy: adminUser._id,
           members: [adminUser._id]
         })
-      } else if (channel.name === 'nyheter' && !exists.isRestricted) {
-        // Update existing nyheter channel to be restricted if it's not already
-        exists.isRestricted = true;
+      } else if (channel.name === 'allmänt' && exists.isPrivate) {
+        // Make sure allmänt is public
+        exists.isPrivate = false;
         await exists.save();
+        console.log('Updated allmänt channel to be public');
+      } else if (channel.name === 'nyheter' && !exists.isPrivate) {
+        // Make sure nyheter is private
+        exists.isPrivate = true;
+        await exists.save();
+        console.log('Updated nyheter channel to be private');
       }
     }
 
